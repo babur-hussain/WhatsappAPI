@@ -118,7 +118,7 @@ export const sendTemplate = catchAsync(async (req: AuthRequest, res: Response) =
     const factoryId = req.user?.factoryId;
     if (!factoryId) return res.status(401).json(errorResponse('Unauthorized', 'UNAUTHORIZED'));
 
-    const { to, templateName, languageCode, components } = req.body;
+    const { to, templateName, languageCode, components, templateContent } = req.body;
 
     if (!to || !templateName || !languageCode) {
         return res.status(400).json(errorResponse('Missing required fields: to, templateName, languageCode'));
@@ -130,6 +130,7 @@ export const sendTemplate = catchAsync(async (req: AuthRequest, res: Response) =
             templateName,
             languageCode,
             components,
+            templateContent,
         });
         res.status(200).json(successResponse(result));
     } catch (error) {
@@ -143,7 +144,7 @@ export const bulkSendTemplate = catchAsync(async (req: AuthRequest, res: Respons
     const factoryId = req.user?.factoryId;
     if (!factoryId) return res.status(401).json(errorResponse('Unauthorized', 'UNAUTHORIZED'));
 
-    const { templateName, languageCode, components, targetType } = req.body;
+    const { templateName, languageCode, components, targetType, templateContent } = req.body;
 
     if (!templateName || !languageCode || !targetType) {
         return res.status(400).json(errorResponse('Missing required fields: templateName, languageCode, targetType'));
@@ -155,6 +156,7 @@ export const bulkSendTemplate = catchAsync(async (req: AuthRequest, res: Respons
             languageCode,
             components,
             targetType,
+            templateContent,
         });
         res.status(201).json(successResponse(result));
     } catch (error) {

@@ -317,7 +317,7 @@ export default function TemplatesPage() {
     // Helper: extract variable placeholders like {{1}}, {{2}} from text
     const extractVars = (text: string): string[] => {
         const matches = text.match(/\{\{\d+\}\}/g);
-        return matches ? [...new Set(matches)].sort() : [];
+        return matches ? Array.from(new Set(matches)).sort() : [];
     };
 
     // Helper: get send components array for WhatsApp API
@@ -368,7 +368,27 @@ export default function TemplatesPage() {
         setError(''); setSaving(true);
         try {
             const components = buildSendComponents();
-            const body: any = { to: sendPhone, templateName: selected.name, languageCode: selected.language };
+
+            // Build full text content for storage in conversations
+            const headerComp = selected.components?.find((c: any) => c.type === 'HEADER');
+            const bodyComp = selected.components?.find((c: any) => c.type === 'BODY');
+            const footerComp = selected.components?.find((c: any) => c.type === 'FOOTER');
+            let templateContent = '';
+            if (headerComp?.format === 'TEXT' && headerComp?.text) {
+                const hText = sendHeaderVar ? headerComp.text.replace(/\{\{1\}\}/, sendHeaderVar) : headerComp.text;
+                templateContent += `*${hText}*\n\n`;
+            }
+            if (headerComp?.format && ['IMAGE', 'VIDEO', 'DOCUMENT'].includes(headerComp.format)) {
+                templateContent += `[${headerComp.format}: ${sendHeaderMediaUrl || 'attached'}]\n\n`;
+            }
+            if (bodyComp?.text) {
+                templateContent += fillVars(bodyComp.text, sendBodyVars);
+            }
+            if (footerComp?.text) {
+                templateContent += `\n\n${footerComp.text}`;
+            }
+
+            const body: any = { to: sendPhone, templateName: selected.name, languageCode: selected.language, templateContent: templateContent.trim() };
             if (components.length > 0) body.components = components;
 
             const res = await fetch(`${API}/send`, {

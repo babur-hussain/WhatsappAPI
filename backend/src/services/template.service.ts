@@ -35,6 +35,7 @@ export interface SendTemplateData {
     templateName: string;
     languageCode: string;
     components?: any[];
+    templateContent?: string;
 }
 
 export interface BulkSendTemplateData {
@@ -42,6 +43,7 @@ export interface BulkSendTemplateData {
     languageCode: string;
     components?: any[];
     targetType: 'ALL_LEADS' | 'NEW_LEADS' | 'CONTACTED_LEADS';
+    templateContent?: string;
 }
 
 // ─── Service ────────────────────────────────────────────────────────────────
@@ -411,12 +413,14 @@ export class TemplateService {
                 });
             }
 
+            const messageContent = data.templateContent || `[Template: ${data.templateName}]`;
+
             // Store the message
             await prisma.message.create({
                 data: {
                     leadId: lead.id,
                     factoryId,
-                    content: `[Template: ${data.templateName}]`,
+                    content: messageContent,
                     sender: 'BOT',
                     timestamp: new Date(),
                 },
@@ -425,7 +429,7 @@ export class TemplateService {
             // Update lead's last message
             await prisma.lead.update({
                 where: { id: lead.id },
-                data: { lastMessage: `[Template: ${data.templateName}]`, updatedAt: new Date() },
+                data: { lastMessage: messageContent, updatedAt: new Date() },
             });
         } catch (storeError) {
             // Log but don't fail the send — the message was already sent successfully
@@ -464,7 +468,7 @@ export class TemplateService {
             data: {
                 factoryId,
                 title: `Template: ${data.templateName}`,
-                message: `[Template] ${data.templateName} (${data.languageCode})`,
+                message: data.templateContent || `[Template] ${data.templateName} (${data.languageCode})`,
                 targetType: data.targetType,
                 status: 'SENDING',
                 totalRecipients: leads.length,
@@ -497,6 +501,7 @@ export class TemplateService {
                     templateName: data.templateName,
                     languageCode: data.languageCode,
                     components: data.components || [],
+                    templateContent: data.templateContent,
                     phoneNumber: recipient.phoneNumber,
                     leadId: recipient.leadId,
                 },
@@ -527,10 +532,11 @@ export class TemplateService {
         templateName: string;
         languageCode: string;
         components: any[];
+        templateContent?: string;
         phoneNumber: string;
         leadId: string;
     }) {
-        const { broadcastId, recipientId, factoryId, templateName, languageCode, components, phoneNumber, leadId } = data;
+        const { broadcastId, recipientId, factoryId, templateName, languageCode, components, templateContent, phoneNumber, leadId } = data;
 
         try {
             await whatsappService.sendTemplateMessage(factoryId, phoneNumber, templateName, languageCode, components);
@@ -540,11 +546,13 @@ export class TemplateService {
                 data: { status: 'SENT', sentAt: new Date() },
             });
 
+            const messageContent = templateContent || `[Template: ${templateName}]`;
+
             await prisma.message.create({
                 data: {
                     leadId,
                     factoryId,
-                    content: `[Template: ${templateName}]`,
+                    content: messageContent,
                     sender: 'BOT',
                     timestamp: new Date(),
                 },
