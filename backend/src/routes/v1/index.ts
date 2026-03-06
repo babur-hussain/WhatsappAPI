@@ -1,0 +1,38 @@
+import { Router } from 'express';
+import webhookRoutes from './webhook.routes';
+import catalogRoutes from './catalog.routes';
+import leadRoutes from './lead.routes';
+import notificationRoutes from './notification.routes';
+import authRoutes from '../../api/routes/auth.routes';
+import billingRoutes from './billing.routes';
+import factoryRoutes from './factory.routes';
+import adminRoutes from './admin.routes';
+import analyticsRoutes from './analytics.routes';
+import followUpRoutes from './followup.routes';
+import broadcastRoutes from './broadcast.routes';
+import orderRoutes from './order.routes';
+import settingsRoutes from './settings.routes';
+import whatsappRoutes from './whatsapp.routes';
+import conversationRoutes from './conversation.routes';
+import templateRoutes from './template.routes';
+
+const router = Router();
+
+router.use('/webhook', webhookRoutes);
+router.use('/catalog', catalogRoutes);
+router.use('/leads', leadRoutes);
+router.use('/notifications', notificationRoutes);
+router.use('/auth', authRoutes);
+router.use('/billing', billingRoutes);
+router.use('/factory', factoryRoutes);
+router.use('/admin', adminRoutes);
+router.use('/analytics', analyticsRoutes);
+router.use('/followups', followUpRoutes);
+router.use('/broadcasts', broadcastRoutes);
+router.use('/orders', orderRoutes);
+router.use('/settings', settingsRoutes);
+router.use('/whatsapp', whatsappRoutes);
+router.use('/conversations', conversationRoutes);
+router.use('/templates', templateRoutes);
+
+export default router;

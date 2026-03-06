@@ -1,0 +1,355 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  FACTORY_ADMIN
+  SALES
+}
+
+
+
+model SuperAdmin {
+  id          String   @id @default(uuid())
+  firebaseUid String   @unique
+  email       String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  CLOSED
+}
+
+enum LeadSource {
+  WHATSAPP
+}
+
+enum SenderType {
+  CUSTOMER
+  BOT
+  ADMIN
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  CANCELLED
+}
+
+enum PaymentStatus {
+  SUCCESS
+  FAILED
+  PENDING
+}
+
+enum FileType {
+  PDF
+  IMAGE
+}
+
+enum NotificationType {
+  NEW_LEAD
+  MESSAGE
+}
+
+enum LeadActivityType {
+  LEAD_CREATED
+  STATUS_CHANGED
+  MESSAGE_SENT
+  MESSAGE_RECEIVED
+}
+
+enum FollowUpStatus {
+  PENDING
+  SENT
+  CANCELLED
+}
+
+enum BroadcastStatus {
+  DRAFT
+  SENDING
+  COMPLETED
+}
+
+enum RecipientStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  COMPLETED
+  CANCELLED
+}
+
+enum OrderSource {
+  DASHBOARD
+  AI
+  API
+}
+
+model Factory {
+  id                    String         @id @default(uuid())
+  factoryName           String
+  ownerName             String
+  email                 String         @unique
+  phone                 String?
+  whatsappNumber        String?
+  whatsappPhoneNumberId String?
+  whatsappAccessToken   String?
+  whatsappBusinessAccountId String?
+  isWhatsappConnected   Boolean        @default(false)
+  isCatalogUploaded     Boolean        @default(false)
+  isOnboardingComplete  Boolean        @default(false)
+  isActive              Boolean        @default(true)
+  followUpsEnabled      Boolean        @default(true)
+  followUp1Enabled      Boolean        @default(true)
+  followUp2Enabled      Boolean        @default(true)
+  followUp3Enabled      Boolean        @default(true)
+  followUp1Delay        Int            @default(21600)
+  followUp2Delay        Int            @default(86400)
+  followUp3Delay        Int            @default(259200)
+  followUp1Message      String?
+  followUp2Message      String?
+  followUp3Message      String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  users                 User[]
+  leads                 Lead[]
+  messages              Message[]
+  catalogs              Catalog[]
+  notifications         Notification[]
+  subscriptions         Subscription[]
+  payments              Payment[]
+  leadActivities        LeadActivity[]
+  followUps             FollowUp[]
+  broadcasts            Broadcast[]
+  orders                Order[]
+}
+
+model User {
+  id            String   @id @default(uuid())
+  firebaseUid   String   @unique
+  factoryId     String?
+  factory       Factory? @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  name          String
+  email         String   @unique
+  phone         String?
+  role          Role     @default(SALES)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  assignedLeads Lead[]   @relation("AssignedUser")
+
+  @@index([firebaseUid])
+  @@index([factoryId])
+}
+
+model Subscription {
+  id                     String             @id @default(uuid())
+  factoryId              String
+  factory                Factory            @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  razorpayCustomerId     String?
+  razorpaySubscriptionId String?            @unique
+  planName               String
+  status                 SubscriptionStatus @default(INACTIVE)
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  createdAt              DateTime           @default(now())
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  factoryId         String
+  factory           Factory       @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  razorpayPaymentId String?       @unique
+  amount            Float
+  currency          String        @default("INR")
+  status            PaymentStatus @default(PENDING)
+  createdAt         DateTime      @default(now())
+}
+
+model Lead {
+  id                     String               @id @default(uuid())
+  factoryId              String
+  factory                Factory              @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  customerPhone          String
+  customerName           String?
+  lastMessage            String?
+  productInterest        String?
+  quantity               Int?
+  status                 LeadStatus           @default(NEW)
+  source                 LeadSource           @default(WHATSAPP)
+  assignedToUserId       String?
+  assignedTo             User?                @relation("AssignedUser", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  responseTimeSeconds    Int?
+  closedAt               DateTime?
+  leadValue              Float?
+  firstCustomerMessageAt DateTime?
+  firstResponseAt        DateTime?
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+  messages               Message[]
+  activities             LeadActivity[]
+  followUps              FollowUp[]
+  broadcastRecipients    BroadcastRecipient[]
+  orders                 Order[]
+
+  @@unique([factoryId, customerPhone])
+  @@index([factoryId])
+  @@index([customerPhone])
+  @@index([createdAt])
+  @@index([factoryId, status])
+  @@index([assignedToUserId])
+  @@index([closedAt])
+}
+
+model FollowUp {
+  id             String         @id @default(uuid())
+  leadId         String
+  lead           Lead           @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  factoryId      String
+  factory        Factory        @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  followUpNumber Int
+  scheduledAt    DateTime
+  sentAt         DateTime?
+  status         FollowUpStatus @default(PENDING)
+  message        String?        @db.Text
+  createdAt      DateTime       @default(now())
+
+  @@index([leadId])
+  @@index([factoryId])
+  @@index([status, scheduledAt])
+  @@index([leadId, status])
+}
+
+model LeadActivity {
+  id        String           @id @default(uuid())
+  leadId    String
+  lead      Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  factoryId String
+  factory   Factory          @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  type      LeadActivityType
+  metadata  Json?
+  createdAt DateTime         @default(now())
+
+  @@index([leadId])
+  @@index([factoryId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model Message {
+  id        String     @id @default(uuid())
+  leadId    String
+  lead      Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  factoryId String
+  factory   Factory    @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  sender    SenderType
+  content   String     @db.Text
+  timestamp DateTime   @default(now())
+
+  @@index([leadId])
+  @@index([factoryId])
+  @@index([timestamp])
+}
+
+model Catalog {
+  id        String   @id @default(uuid())
+  factoryId String
+  factory   Factory  @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  fileName  String
+  fileUrl   String
+  fileType  FileType
+  createdAt DateTime @default(now())
+
+  @@index([factoryId])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  factoryId String
+  factory   Factory          @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  content   String
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([factoryId, isRead])
+  @@index([createdAt])
+}
+
+model Broadcast {
+  id              String               @id @default(uuid())
+  factoryId       String
+  factory         Factory              @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  title           String
+  message         String               @db.Text
+  mediaUrl        String?
+  targetType      String
+  status          BroadcastStatus      @default(DRAFT)
+  totalRecipients Int                  @default(0)
+  sentCount       Int                  @default(0)
+  failedCount     Int                  @default(0)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  recipients      BroadcastRecipient[]
+
+  @@index([factoryId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model BroadcastRecipient {
+  id          String          @id @default(uuid())
+  broadcastId String
+  broadcast   Broadcast       @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
+  leadId      String
+  lead        Lead            @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  phoneNumber String
+  status      RecipientStatus @default(PENDING)
+  sentAt      DateTime?
+  error       String?         @db.Text
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([broadcastId])
+  @@index([leadId])
+  @@index([status])
+}
+
+model Order {
+  id            String      @id @default(uuid())
+  factoryId     String
+  factory       Factory     @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  leadId        String?
+  lead          Lead?       @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  customerPhone String
+  customerName  String?
+  productName   String
+  quantity      Int
+  unitPrice     Float
+  totalAmount   Float
+  currency      String      @default("INR")
+  orderStatus   OrderStatus @default(PENDING)
+  source        OrderSource @default(DASHBOARD)
+  notes         String?     @db.Text
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([factoryId])
+  @@index([createdAt])
+  @@index([orderStatus])
+}
+
