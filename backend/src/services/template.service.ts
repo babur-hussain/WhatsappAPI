@@ -378,13 +378,61 @@ export class TemplateService {
     // ─── Send Template to Single Contact ────────────────────────────────────
 
     public async sendTemplate(factoryId: string, data: SendTemplateData) {
-        return whatsappService.sendTemplateMessage(
+        // Send via WhatsApp API
+        const result = await whatsappService.sendTemplateMessage(
             factoryId,
             data.to,
             data.templateName,
             data.languageCode,
             data.components,
         );
+
+        // Store the sent message in the database so it appears in Conversations
+        try {
+            // Find or create a lead for this phone number
+            let lead = await prisma.lead.findUnique({
+                where: {
+                    factoryId_customerPhone: {
+                        factoryId,
+                        customerPhone: data.to,
+                    },
+                },
+            });
+
+            if (!lead) {
+                lead = await prisma.lead.create({
+                    data: {
+                        factoryId,
+                        customerPhone: data.to,
+                        lastMessage: `[Template: ${data.templateName}]`,
+                        status: 'NEW',
+                        source: 'WHATSAPP',
+                    },
+                });
+            }
+
+            // Store the message
+            await prisma.message.create({
+                data: {
+                    leadId: lead.id,
+                    factoryId,
+                    content: `[Template: ${data.templateName}]`,
+                    sender: 'BOT',
+                    timestamp: new Date(),
+                },
+            });
+
+            // Update lead's last message
+            await prisma.lead.update({
+                where: { id: lead.id },
+                data: { lastMessage: `[Template: ${data.templateName}]`, updatedAt: new Date() },
+            });
+        } catch (storeError) {
+            // Log but don't fail the send — the message was already sent successfully
+            logger.error(`Failed to store sent template message: ${(storeError as Error).message}`);
+        }
+
+        return result;
     }
 
     // ─── Bulk Send Template ─────────────────────────────────────────────────

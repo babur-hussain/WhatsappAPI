@@ -20,6 +20,7 @@ export const getTemplates = catchAsync(async (req: AuthRequest, res: Response) =
             limit: limit ? parseInt(limit as string) : undefined,
             after: after as string,
         });
+        res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.status(200).json(successResponse(result));
     } catch (error) {
         res.status(400).json(errorResponse((error as Error).message));
@@ -36,6 +37,7 @@ export const getTemplate = catchAsync(async (req: AuthRequest, res: Response) =>
 
     try {
         const template = await templateService.getTemplate(factoryId, id);
+        res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.status(200).json(successResponse(template));
     } catch (error) {
         res.status(404).json(errorResponse((error as Error).message));

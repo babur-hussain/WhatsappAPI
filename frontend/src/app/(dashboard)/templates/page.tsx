@@ -190,6 +190,10 @@ export default function TemplatesPage() {
     // Send form
     const [sendPhone, setSendPhone] = useState('');
     const [bulkTarget, setBulkTarget] = useState('ALL_LEADS');
+    // Send customization
+    const [sendBodyVars, setSendBodyVars] = useState<Record<string, string>>({});
+    const [sendHeaderVar, setSendHeaderVar] = useState('');
+    const [sendHeaderMediaUrl, setSendHeaderMediaUrl] = useState('');
 
     const fetchTemplates = useCallback(async () => {
         let apiTemplates: Template[] = [];
@@ -197,7 +201,10 @@ export default function TemplatesPage() {
             const params = new URLSearchParams();
             if (filterCat) params.append('category', filterCat);
             if (filterStatus) params.append('status', filterStatus);
-            const res = await fetch(`${API}?${params}`, { headers: await getAuthHeaders() });
+            const res = await fetch(`${API}?${params}`, {
+                headers: await getAuthHeaders(),
+                cache: 'no-store',
+            });
             if (res.ok) {
                 const data = await res.json();
                 apiTemplates = (data.data?.templates || []).map((t: Template) => ({ ...t, isDefault: false }));
@@ -307,17 +314,75 @@ export default function TemplatesPage() {
         } catch { setError('Failed to delete'); }
     };
 
+    // Helper: extract variable placeholders like {{1}}, {{2}} from text
+    const extractVars = (text: string): string[] => {
+        const matches = text.match(/\{\{\d+\}\}/g);
+        return matches ? [...new Set(matches)].sort() : [];
+    };
+
+    // Helper: get send components array for WhatsApp API
+    const buildSendComponents = () => {
+        if (!selected) return [];
+        const comps: any[] = [];
+        const headerComp = selected.components?.find((c: any) => c.type === 'HEADER');
+        const bodyComp = selected.components?.find((c: any) => c.type === 'BODY');
+
+        // Header component
+        if (headerComp) {
+            if (headerComp.format === 'TEXT' && headerComp.text) {
+                const headerVars = extractVars(headerComp.text);
+                if (headerVars.length > 0 && sendHeaderVar) {
+                    comps.push({ type: 'header', parameters: [{ type: 'text', text: sendHeaderVar }] });
+                }
+            } else if (['IMAGE', 'VIDEO', 'DOCUMENT'].includes(headerComp.format) && sendHeaderMediaUrl) {
+                const mediaType = headerComp.format.toLowerCase();
+                comps.push({
+                    type: 'header',
+                    parameters: [{ type: mediaType, [mediaType]: { link: sendHeaderMediaUrl } }],
+                });
+            }
+        }
+
+        // Body component
+        if (bodyComp?.text) {
+            const bodyVars = extractVars(bodyComp.text);
+            if (bodyVars.length > 0) {
+                const params = bodyVars.map((v) => ({
+                    type: 'text',
+                    text: sendBodyVars[v] || v,
+                }));
+                comps.push({ type: 'body', parameters: params });
+            }
+        }
+
+        return comps;
+    };
+
+    // Helper: replace variables in text with user-provided values for preview
+    const fillVars = (text: string, vars: Record<string, string>) => {
+        return text.replace(/\{\{\d+\}\}/g, (match) => vars[match] || match);
+    };
+
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault(); if (!selected) return;
         setError(''); setSaving(true);
         try {
+            const components = buildSendComponents();
+            const body: any = { to: sendPhone, templateName: selected.name, languageCode: selected.language };
+            if (components.length > 0) body.components = components;
+
             const res = await fetch(`${API}/send`, {
                 method: 'POST', headers: await getAuthHeaders(),
-                body: JSON.stringify({ to: sendPhone, templateName: selected.name, languageCode: selected.language }),
+                body: JSON.stringify(body),
             });
             const data = await res.json();
-            if (res.ok) { setSuccess('Template sent!'); setTimeout(() => { setView('library'); setSendPhone(''); setSuccess(''); }, 1500); }
-            else {
+            if (res.ok) {
+                setSuccess('Template sent!');
+                setTimeout(() => {
+                    setView('library'); setSendPhone(''); setSuccess('');
+                    setSendBodyVars({}); setSendHeaderVar(''); setSendHeaderMediaUrl('');
+                }, 1500);
+            } else {
                 const errMsg = data.error?.message || 'Send failed';
                 if (selected.isDefault && errMsg.includes('template')) {
                     setError(`${errMsg}. Note: Library templates must be created in your WhatsApp Business Account first. Use "Use as Base" to create your own version.`);
@@ -603,30 +668,138 @@ export default function TemplatesPage() {
     );
 
     // ─── Send Modal ──────────────────────────────────────────────────────────
-    const renderSend = () => selected && (
-        <Modal title={`Send: ${selected.name}`} icon={<Send className="w-5 h-5 text-indigo-600" />} onClose={() => { setView('library'); setSendPhone(''); setError(''); setSuccess(''); }}>
-            <form onSubmit={handleSend} className="p-6 space-y-5">
-                {error && <div className="p-3 bg-red-50 text-red-700 rounded-xl text-sm border border-red-200">{error}</div>}
-                {success && <div className="p-3 bg-emerald-50 text-emerald-700 rounded-xl text-sm border border-emerald-200">{success}</div>}
-                <div>
-                    <label className="block text-sm font-semibold text-slate-900 mb-2">Phone Number (with country code)</label>
-                    <input required value={sendPhone} onChange={e => setSendPhone(e.target.value)} placeholder="e.g. 919876543210"
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-sm" />
-                </div>
-                <div className="bg-slate-50 rounded-xl p-4">
-                    <p className="text-xs text-slate-500 mb-3">Preview</p>
-                    <TemplatePreview components={selected.components} />
-                </div>
-                <div className="flex justify-end gap-3">
-                    <button type="button" onClick={() => { setView('library'); setSendPhone(''); }} className="px-5 py-2.5 rounded-xl font-semibold text-slate-600 hover:bg-slate-200">Cancel</button>
-                    <button type="submit" disabled={saving || !sendPhone}
-                        className="px-5 py-2.5 rounded-xl font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 flex items-center">
-                        {saving ? <><RefreshCw className="w-4 h-4 mr-2 animate-spin" />Sending...</> : <><Send className="w-4 h-4 mr-2" />Send Template</>}
-                    </button>
-                </div>
-            </form>
-        </Modal>
-    );
+    const renderSend = () => {
+        if (!selected) return null;
+        const headerComp = selected.components?.find((c: any) => c.type === 'HEADER');
+        const bodyComp = selected.components?.find((c: any) => c.type === 'BODY');
+        const bodyVars = bodyComp?.text ? extractVars(bodyComp.text) : [];
+        const headerVars = (headerComp?.format === 'TEXT' && headerComp?.text) ? extractVars(headerComp.text) : [];
+        const headerFormat = headerComp?.format || 'NONE';
+        const isMediaHeader = ['IMAGE', 'VIDEO', 'DOCUMENT'].includes(headerFormat);
+        const hasCustomizations = bodyVars.length > 0 || headerVars.length > 0 || isMediaHeader;
+
+        // Build a preview with variables filled in
+        const previewComponents = selected.components?.map((c: any) => {
+            if (c.type === 'BODY' && c.text) {
+                return { ...c, text: fillVars(c.text, sendBodyVars) };
+            }
+            if (c.type === 'HEADER' && c.format === 'TEXT' && c.text && sendHeaderVar) {
+                return { ...c, text: c.text.replace(/\{\{1\}\}/, sendHeaderVar) };
+            }
+            return c;
+        }) || [];
+
+        return (
+            <Modal title={`Send: ${selected.name}`} icon={<Send className="w-5 h-5 text-indigo-600" />} onClose={() => { setView('library'); setSendPhone(''); setSendBodyVars({}); setSendHeaderVar(''); setSendHeaderMediaUrl(''); setError(''); setSuccess(''); }}>
+                <form onSubmit={handleSend} className="p-6 space-y-5">
+                    {error && <div className="p-3 bg-red-50 text-red-700 rounded-xl text-sm border border-red-200">{error}</div>}
+                    {success && <div className="p-3 bg-emerald-50 text-emerald-700 rounded-xl text-sm border border-emerald-200">{success}</div>}
+
+                    {/* Phone Number */}
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-900 mb-2">Phone Number (with country code)</label>
+                        <input required value={sendPhone} onChange={e => setSendPhone(e.target.value)} placeholder="e.g. 919876543210"
+                            className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-sm" />
+                    </div>
+
+                    {/* Customization Section */}
+                    {hasCustomizations && (
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                                <Zap className="w-4 h-4 text-amber-500" />
+                                Customize Content
+                            </div>
+
+                            {/* Header Media Upload */}
+                            {isMediaHeader && (
+                                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-4 border border-indigo-100">
+                                    <label className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
+                                        {headerFormat === 'IMAGE' && <><Image className="w-4 h-4 text-indigo-500" /> Header Image URL</>}
+                                        {headerFormat === 'VIDEO' && <><Video className="w-4 h-4 text-blue-500" /> Header Video URL</>}
+                                        {headerFormat === 'DOCUMENT' && <><File className="w-4 h-4 text-amber-500" /> Header Document URL</>}
+                                    </label>
+                                    <input
+                                        value={sendHeaderMediaUrl}
+                                        onChange={e => setSendHeaderMediaUrl(e.target.value)}
+                                        placeholder={headerFormat === 'IMAGE' ? 'https://example.com/image.jpg' : headerFormat === 'VIDEO' ? 'https://example.com/video.mp4' : 'https://example.com/document.pdf'}
+                                        className="w-full px-4 py-2.5 rounded-xl border border-indigo-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white"
+                                    />
+                                    <p className="text-xs text-slate-400 mt-1.5">Publicly accessible URL to the {headerFormat.toLowerCase()} file</p>
+                                </div>
+                            )}
+
+                            {/* Header Text Variable */}
+                            {headerVars.length > 0 && (
+                                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-4 border border-indigo-100">
+                                    <label className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
+                                        <Tag className="w-4 h-4 text-indigo-500" />
+                                        Header Variable
+                                    </label>
+                                    <input
+                                        value={sendHeaderVar}
+                                        onChange={e => setSendHeaderVar(e.target.value)}
+                                        placeholder={`Value for ${headerVars[0]}`}
+                                        className="w-full px-4 py-2.5 rounded-xl border border-indigo-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white"
+                                    />
+                                </div>
+                            )}
+
+                            {/* Body Variables */}
+                            {bodyVars.length > 0 && (
+                                <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-100 space-y-3">
+                                    <p className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                                        <Layers className="w-4 h-4 text-amber-500" />
+                                        Body Variables ({bodyVars.length})
+                                    </p>
+                                    {bodyVars.map((v, i) => (
+                                        <div key={v}>
+                                            <label className="block text-xs text-slate-500 mb-1">{v} — Variable {i + 1}</label>
+                                            <input
+                                                value={sendBodyVars[v] || ''}
+                                                onChange={e => setSendBodyVars(prev => ({ ...prev, [v]: e.target.value }))}
+                                                placeholder={`Enter value for ${v}`}
+                                                className="w-full px-4 py-2.5 rounded-xl border border-amber-200 focus:ring-2 focus:ring-amber-400 outline-none text-sm bg-white"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Live Preview */}
+                    <div className="bg-slate-50 rounded-xl p-4">
+                        <p className="text-xs text-slate-500 mb-3">Live Preview</p>
+                        {isMediaHeader && sendHeaderMediaUrl && (
+                            <div className="mb-2 rounded-lg overflow-hidden max-w-[320px] mx-auto">
+                                {headerFormat === 'IMAGE' && (
+                                    <img src={sendHeaderMediaUrl} alt="Header" className="w-full h-36 object-cover bg-indigo-50" onError={e => (e.currentTarget.style.display = 'none')} />
+                                )}
+                                {headerFormat === 'VIDEO' && (
+                                    <video src={sendHeaderMediaUrl} className="w-full h-36 object-cover bg-blue-50" controls />
+                                )}
+                                {headerFormat === 'DOCUMENT' && (
+                                    <div className="h-20 bg-amber-50 flex items-center justify-center gap-2 text-amber-600 text-sm">
+                                        <File className="w-5 h-5" /> Document attached
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        <TemplatePreview components={previewComponents} />
+                    </div>
+
+                    <div className="flex justify-end gap-3">
+                        <button type="button" onClick={() => { setView('library'); setSendPhone(''); setSendBodyVars({}); setSendHeaderVar(''); setSendHeaderMediaUrl(''); }}
+                            className="px-5 py-2.5 rounded-xl font-semibold text-slate-600 hover:bg-slate-200">Cancel</button>
+                        <button type="submit" disabled={saving || !sendPhone}
+                            className="px-5 py-2.5 rounded-xl font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 flex items-center">
+                            {saving ? <><RefreshCw className="w-4 h-4 mr-2 animate-spin" />Sending...</> : <><Send className="w-4 h-4 mr-2" />Send Template</>}
+                        </button>
+                    </div>
+                </form>
+            </Modal>
+        );
+    };
 
     // ─── Bulk Send Modal ─────────────────────────────────────────────────────
     const renderBulkSend = () => selected && (
