@@ -12,11 +12,10 @@ services:
     plan: starter
     dockerCommand: "pnpm run start:prod"
     branch: main
+    buildCommand: "npx prisma migrate deploy"
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: loomiflow-db
-          property: connectionString
+        sync: false
       - key: REDIS_URL
         fromService:
           type: redis
@@ -26,10 +25,3 @@ services:
         value: "8000"
       - key: NODE_ENV
         value: "production"
-
-databases:
-  - name: loomiflow-db
-    region: oregon
-    plan: starter
-    databaseName: loomiflow
-    user: loomiflow
