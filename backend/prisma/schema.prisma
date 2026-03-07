@@ -114,6 +114,9 @@ model Factory {
   isCatalogUploaded     Boolean        @default(false)
   isOnboardingComplete  Boolean        @default(false)
   isActive              Boolean        @default(true)
+  apiKey                String?        @unique
+  webhookUrl            String?
+  webhookSecret         String?
   followUpsEnabled      Boolean        @default(true)
   followUp1Enabled      Boolean        @default(true)
   followUp2Enabled      Boolean        @default(true)
