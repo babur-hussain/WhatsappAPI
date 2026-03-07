@@ -7,10 +7,20 @@ if (!admin.apps.length) {
 
         if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
             // Prefer the base64 encoded service account JSON if provided
-            const serviceAccountJson = Buffer.from(
-                process.env.FIREBASE_SERVICE_ACCOUNT_BASE64,
-                'base64'
-            ).toString('utf-8');
+            let base64String = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64.trim();
+            
+            // Strip any surrounding quotes if Railway added them
+            if ((base64String.startsWith('"') && base64String.endsWith('"')) ||
+                (base64String.startsWith("'") && base64String.endsWith("'"))) {
+                base64String = base64String.slice(1, -1);
+            }
+
+            const serviceAccountJson = Buffer.from(base64String, 'base64').toString('utf-8');
+            
+            // Log first 100 chars and last 50 chars to debug JSON string
+            console.log('Decoded JSON starts with:', serviceAccountJson.substring(0, 100));
+            console.log('Decoded JSON ends with:', serviceAccountJson.substring(serviceAccountJson.length - 50));
+            
             credential = admin.credential.cert(JSON.parse(serviceAccountJson));
             console.log('Firebase Admin initialized using Base64 Service Account');
         } else {
