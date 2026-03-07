@@ -15,7 +15,7 @@ COPY packages/shared/package.json packages/shared/
 COPY frontend/package.json frontend/
 
 # Install all workspace dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # Copy source code
 COPY packages/shared/ ./packages/shared/
@@ -43,7 +43,7 @@ COPY --from=builder /app/backend/dist ./backend/dist
 COPY --from=builder /app/backend/prisma ./backend/prisma
 
 # Intentionally skip dev dependencies for prod
-RUN pnpm install --prod --frozen-lockfile
+RUN pnpm install --prod
 
 # Expose backend port
 EXPOSE 8000
