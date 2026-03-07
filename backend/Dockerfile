@@ -11,14 +11,14 @@ RUN corepack enable pnpm
 # First, install dependencies only to leverage Docker cache
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY backend/package.json backend/
-COPY shared/package.json shared/
+COPY packages/shared/package.json packages/shared/
 COPY frontend/package.json frontend/
 
 # Install all workspace dependencies
 RUN pnpm install --frozen-lockfile
 
 # Copy source code
-COPY shared/ ./shared/
+COPY packages/shared/ ./packages/shared/
 COPY backend/ ./backend/
 
 # Generate Prisma Client
@@ -37,7 +37,7 @@ ENV NODE_ENV=production
 
 # Copy built artifacts and runtime dependencies
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
-COPY --from=builder /app/shared ./shared
+COPY --from=builder /app/packages/shared ./packages/shared
 COPY --from=builder /app/backend/package.json ./backend/
 COPY --from=builder /app/backend/dist ./backend/dist
 COPY --from=builder /app/backend/prisma ./backend/prisma
