@@ -3,9 +3,22 @@ import * as admin from 'firebase-admin';
 // Initialize Firebase Admin SDK
 if (!admin.apps.length) {
     try {
-        const privateKey = process.env.FIREBASE_PRIVATE_KEY
-            ?.replace(/\\n/g, '\n')  // Convert literal \n to actual newlines
-            ?.replace(/"/g, '');     // Strip any surrounding quotes
+        let privateKey = process.env.FIREBASE_PRIVATE_KEY || '';
+
+        // Debug: log the first 50 chars to verify format
+        console.log('FIREBASE_PRIVATE_KEY starts with:', privateKey.substring(0, 50));
+        console.log('FIREBASE_PRIVATE_KEY length:', privateKey.length);
+
+        // Strip surrounding quotes if present
+        if ((privateKey.startsWith('"') && privateKey.endsWith('"')) ||
+            (privateKey.startsWith("'") && privateKey.endsWith("'"))) {
+            privateKey = privateKey.slice(1, -1);
+        }
+
+        // Replace literal \n (two characters: backslash + n) with actual newlines
+        privateKey = privateKey.split('\\n').join('\n');
+
+        console.log('Processed key starts with:', privateKey.substring(0, 40));
 
         admin.initializeApp({
             credential: admin.credential.cert({
