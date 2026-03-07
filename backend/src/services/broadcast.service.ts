@@ -64,7 +64,7 @@ export class BroadcastService {
         });
 
         // Create recipients in bulk
-        const recipientData = leads.map(lead => ({
+        const recipientData = leads.map((lead: any) => ({
             broadcastId: broadcast.id,
             leadId: lead.id,
             phoneNumber: lead.customerPhone,

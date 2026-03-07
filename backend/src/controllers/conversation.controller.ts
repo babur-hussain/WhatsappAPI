@@ -51,7 +51,7 @@ export const getConversations = catchAsync(async (req: AuthRequest, res: Respons
         prisma.lead.count({ where }),
     ]);
 
-    const conversations = leads.map((lead) => ({
+    const conversations = leads.map((lead: any) => ({
         id: lead.id,
         customerPhone: lead.customerPhone,
         customerName: lead.customerName,

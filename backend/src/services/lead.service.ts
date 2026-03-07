@@ -15,7 +15,7 @@ export class LeadService {
     }) {
         const { factoryId, customerPhone, customerName, messageText, timestamp } = params;
 
-        return await prisma.$transaction(async (tx) => {
+        return await prisma.$transaction(async (tx: any) => {
             // Find or create the Lead
             let lead = await tx.lead.findUnique({
                 where: {
@@ -104,7 +104,7 @@ export class LeadService {
     }) {
         const { leadId, factoryId, content, sender, timestamp } = params;
 
-        return await prisma.$transaction(async (tx) => {
+        return await prisma.$transaction(async (tx: any) => {
             const lead = await tx.lead.findUnique({ where: { id: leadId } });
             if (!lead) throw new Error('Lead not found');
 

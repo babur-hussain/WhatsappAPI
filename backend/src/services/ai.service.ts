@@ -76,7 +76,7 @@ export const aiService = {
             const history = await this.getConversationHistory(leadId, 10);
             if (history.length > 0) {
                 conversationContext = '\n\nConversation History:\n' +
-                    history.map(m => `${m.sender === 'CUSTOMER' ? 'Customer' : 'You'}: ${m.content}`).join('\n');
+                    history.map((m: any) => `${m.sender === 'CUSTOMER' ? 'Customer' : 'You'}: ${m.content}`).join('\n');
             }
         }
 

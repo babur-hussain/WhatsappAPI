@@ -22,7 +22,7 @@ export class OrderService {
 
         const totalAmount = data.quantity * data.unitPrice;
 
-        const order = await prisma.$transaction(async (tx) => {
+        const order = await prisma.$transaction(async (tx: any) => {
             // Create order
             const newOrder = await tx.order.create({
                 data: {

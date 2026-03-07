@@ -144,7 +144,7 @@ export const receiveWebhook = catchAsync(async (req: Request, res: Response) => 
                     where: { factoryId: factory.id, role: { in: ['FACTORY_ADMIN', 'SALES'] } },
                     select: { phone: true }
                 });
-                const adminPhones = salesUsers.map(u => u.phone).filter(Boolean);
+                const adminPhones = salesUsers.map((u: any) => u.phone).filter(Boolean);
 
                 const alertMsg = `*New Lead Received*\n\nCustomer: +${customerPhone}\nMessage: ${messageText}\n\nOpen dashboard to respond immediately.`;
 

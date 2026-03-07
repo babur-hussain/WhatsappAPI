@@ -147,10 +147,10 @@ export class AnalyticsService {
             },
         });
 
-        const result = salesUsers.map((user) => {
+        const result = salesUsers.map((user: any) => {
             const totalLeads = user.assignedLeads.length;
             const closedLeads = user.assignedLeads.filter(
-                (l) => l.status === LeadStatus.CLOSED
+                (l: any) => l.status === LeadStatus.CLOSED
             ).length;
             const conversionRate = totalLeads > 0
                 ? parseFloat(((closedLeads / totalLeads) * 100).toFixed(2))

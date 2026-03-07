@@ -35,7 +35,7 @@ router.get('/factories', async (req: AuthRequest, res: Response) => {
             prisma.factory.count()
         ]);
 
-        const formattedFactories = factories.map(factory => {
+        const formattedFactories = factories.map((factory: any) => {
             const currentSubscription = factory.subscriptions[0];
             return {
                 id: factory.id,

@@ -476,7 +476,7 @@ export class TemplateService {
         });
 
         // Create recipients
-        const recipientData = leads.map(lead => ({
+        const recipientData = leads.map((lead: any) => ({
             broadcastId: broadcast.id,
             leadId: lead.id,
             phoneNumber: lead.customerPhone,
