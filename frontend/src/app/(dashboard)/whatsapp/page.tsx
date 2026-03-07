@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CheckCircle2, XCircle, Loader2, Copy, Check, Wifi, WifiOff, ExternalLink, ShieldCheck } from "lucide-react";
 
-const API_BASE = 'http://localhost:8000/api/v1/whatsapp';
+const API_BASE = 'https://loomiflow-backend-production-db59.up.railway.app/api/v1/whatsapp';
 
 function getCookie(name: string) {
     if (typeof document === 'undefined') return '';
@@ -31,7 +31,7 @@ export default function WhatsAppPage() {
 
     const webhookUrl = typeof window !== 'undefined'
         ? `${window.location.protocol}//${window.location.hostname}:8000/api/v1/webhook`
-        : 'http://localhost:8000/api/v1/webhook';
+        : 'https://loomiflow-backend-production-db59.up.railway.app/api/v1/webhook';
 
     const getHeaders = () => ({
         'Authorization': `Bearer ${getCookie('accessToken')}`,

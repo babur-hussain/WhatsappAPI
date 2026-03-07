@@ -64,7 +64,7 @@ interface SalesPerformance {
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const API_BASE = 'http://localhost:8000/api/v1/analytics';
+const API_BASE = 'https://loomiflow-backend-production-db59.up.railway.app/api/v1/analytics';
 const HEADERS = {
     'Authorization': 'Bearer test',
     'Content-Type': 'application/json',

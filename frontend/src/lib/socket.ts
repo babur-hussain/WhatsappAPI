@@ -1,7 +1,7 @@
 import { io } from 'socket.io-client';
 
 // In production, this would be an env var
-const URL = 'http://localhost:5001';
+const URL = 'https://loomiflow-backend-production-db59.up.railway.app';
 
 // Replace with logic that fetches valid token when implementing full auth
 const token = 'test';

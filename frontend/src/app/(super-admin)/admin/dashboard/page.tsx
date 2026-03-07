@@ -23,7 +23,7 @@ export default function AdminDashboardPage() {
         const fetchStats = async (user: FirebaseUser) => {
             try {
                 const token = await user.getIdToken();
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/admin/stats`, {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://loomiflow-backend-production-db59.up.railway.app'}/api/v1/admin/stats`, {
                     headers: {
                         Authorization: `Bearer ${token}`
                     }

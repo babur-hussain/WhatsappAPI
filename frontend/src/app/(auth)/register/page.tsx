@@ -44,7 +44,7 @@ export default function RegisterPage() {
             }
             const idToken = await userCredential.user.getIdToken();
 
-            const res = await fetch('http://localhost:8000/api/v1/auth/sync', {
+            const res = await fetch('https://loomiflow-backend-production-db59.up.railway.app/api/v1/auth/sync', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${idToken}`,

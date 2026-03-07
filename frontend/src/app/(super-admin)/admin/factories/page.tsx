@@ -40,7 +40,7 @@ export default function AdminFactoriesPage() {
 
     const fetchFactories = async (token: string) => {
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/admin/factories`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://loomiflow-backend-production-db59.up.railway.app'}/api/v1/admin/factories`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -80,7 +80,7 @@ export default function AdminFactoriesPage() {
         setFactories(factories.map(f => f.id === id ? { ...f, isActive: !currentStatus } : f));
 
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/admin/factories/${id}/status`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://loomiflow-backend-production-db59.up.railway.app'}/api/v1/admin/factories/${id}/status`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',

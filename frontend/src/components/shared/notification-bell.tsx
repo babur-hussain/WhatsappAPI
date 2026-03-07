@@ -18,7 +18,7 @@ export function NotificationBell() {
 
     // Auth mock
     const factoryId = 'mock-factory-id';
-    const apiUrl = 'http://localhost:8000/api/v1/notifications';
+    const apiUrl = 'https://loomiflow-backend-production-db59.up.railway.app/api/v1/notifications';
     const headers = {
         'Authorization': 'Bearer test',
         'x-factory-id': factoryId,

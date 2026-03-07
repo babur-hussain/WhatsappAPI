@@ -18,7 +18,7 @@ export default function CatalogsPage() {
 
     // Dummy Factory ID for our mock auth middleware to work
     const factoryId = 'mock-factory-id';
-    const apiUrl = 'http://localhost:8000/api/v1/catalog';
+    const apiUrl = 'https://loomiflow-backend-production-db59.up.railway.app/api/v1/catalog';
 
     const fetchCatalogs = async () => {
         try {

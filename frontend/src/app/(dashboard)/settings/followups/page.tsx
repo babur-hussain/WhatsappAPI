@@ -29,7 +29,7 @@ interface FollowUpSettings {
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const API_BASE = 'http://localhost:8000/api/v1/followups';
+const API_BASE = 'https://loomiflow-backend-production-db59.up.railway.app/api/v1/followups';
 const HEADERS = {
     'Authorization': 'Bearer test',
     'Content-Type': 'application/json',

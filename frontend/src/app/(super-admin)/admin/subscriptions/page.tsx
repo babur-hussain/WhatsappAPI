@@ -36,7 +36,7 @@ export default function AdminSubscriptionsPage() {
     useEffect(() => {
         const fetchSubscriptions = async (token: string) => {
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/admin/subscriptions`, {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://loomiflow-backend-production-db59.up.railway.app'}/api/v1/admin/subscriptions`, {
                     headers: {
                         Authorization: `Bearer ${token}`
                     }
