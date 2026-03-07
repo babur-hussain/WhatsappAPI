@@ -60,7 +60,7 @@ export default function RegisterPage() {
                     title: "Factory Account Created",
                     description: `Welcome aboard, ${ownerName}! Redirecting to setup...`
                 });
-                document.cookie = `accessToken=${idToken}; path=/`;
+                document.cookie = `accessToken=${idToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
                 router.push('/onboarding');
             } else {
                 toast({ title: "Registration Failed", description: data.error?.message || "Please check your inputs.", variant: "destructive" });

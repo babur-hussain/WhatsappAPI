@@ -186,6 +186,7 @@ model Lead {
   factory                Factory              @relation(fields: [factoryId], references: [id], onDelete: Cascade)
   customerPhone          String
   customerName           String?
+  profilePicture         String?
   lastMessage            String?
   productInterest        String?
   quantity               Int?

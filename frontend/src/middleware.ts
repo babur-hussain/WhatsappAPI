@@ -11,25 +11,14 @@ export async function middleware(request: NextRequest) {
 
     const token = request.cookies.get('accessToken')?.value;
     const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/register');
-    const isOnboardingRoute = pathname.startsWith('/onboarding');
-    const isDashboardRoute = pathname === '/' ||
-        pathname.startsWith('/leads') ||
-        pathname.startsWith('/catalogs') ||
-        pathname.startsWith('/team') ||
-        pathname.startsWith('/settings') ||
-        pathname.startsWith('/analytics');
+    const isPublicRoute = isAuthRoute || pathname.startsWith('/onboarding');
 
-    // If no token and trying to access protected routes
-    if (!token && (isDashboardRoute || isOnboardingRoute)) {
+    // If no token and trying to access any non-public route, redirect to login
+    if (!token && !isPublicRoute) {
         return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    // If token exists, we can optionally enforce onboarding.
-    // However, since we can't easily fetch the DB from edge without passing cookies carefully,
-    // we lean on the onboarding page itself (and the client UI) to guide them. 
-    // To strictly protect dashboard, we can attempt a backend ping if needed,
-    // but a common Next.js pattern is to let client components read `me` and redirect if isOnboardingComplete is false.
-    // For now, if they are logged in and hit login/register, push to leads
+    // If already logged in and hitting auth pages, redirect to dashboard
     if (token && isAuthRoute) {
         return NextResponse.redirect(new URL('/leads', request.url));
     }

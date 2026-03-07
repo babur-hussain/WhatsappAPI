@@ -41,7 +41,7 @@ export default function LoginPage() {
             setIsLoading(false);
             if (data.success) {
                 toast({ title: "Welcome back!", description: "Successfully logged in." });
-                document.cookie = `accessToken=${idToken}; path=/`;
+                document.cookie = `accessToken=${idToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
 
                 if (data.data.onboardingComplete) {
                     router.push('/leads');

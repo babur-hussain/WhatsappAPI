@@ -5,6 +5,25 @@ import { notificationService } from '../services/notification.service';
 import { enqueueAiReply, enqueueNotification } from '../config/queue';
 import prisma from '../config/database';
 import catchAsync from '../utils/catch-async';
+import { decrypt } from '../utils/crypto.util';
+
+/**
+ * Fetch the WhatsApp profile picture URL for a given phone number using Meta Cloud API.
+ * Returns null if unavailable or the API call fails.
+ */
+async function fetchProfilePicture(accessToken: string, phoneNumberId: string, waId: string): Promise<string | null> {
+    try {
+        const res = await fetch(
+            `https://graph.facebook.com/v21.0/${phoneNumberId}/contacts?wa_id=${waId}&fields=profile_picture_url`,
+            { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data?.data?.[0]?.profile_picture_url || null;
+    } catch {
+        return null;
+    }
+}
 
 export const verifyWebhook = catchAsync(async (req: Request, res: Response) => {
     const mode = req.query['hub.mode'];
@@ -43,10 +62,14 @@ export const receiveWebhook = catchAsync(async (req: Request, res: Response) => 
         ) {
             const metadata = body.entry[0].changes[0].value.metadata;
             const message = body.entry[0].changes[0].value.messages[0];
+            // contacts array contains sender display name from WhatsApp
+            const contacts = body.entry[0].changes[0].value.contacts || [];
+            const contactName: string | undefined = contacts[0]?.profile?.name;
 
             const businessPhoneNumber = metadata.display_phone_number;
+            const phoneNumberId: string = metadata.phone_number_id;
             const customerPhone = message.from; // Sender phone number
-            const messageText = message.text.body;
+            const messageText = message.text?.body || '[Media message]';
             const timestamp = new Date(parseInt(message.timestamp) * 1000);
 
             // Find the factory by the WhatsApp number
@@ -62,12 +85,27 @@ export const receiveWebhook = catchAsync(async (req: Request, res: Response) => 
             }
 
             // Process the message (create/update lead and store message)
+            // Pass contactName so it gets saved when a new lead is created
             const { lead, isNewLead } = await leadService.processIncomingMessage({
                 factoryId: factory.id,
                 customerPhone,
+                customerName: contactName,
                 messageText,
                 timestamp,
             });
+
+            // Fetch and save profile picture asynchronously (non-blocking)
+            if (isNewLead && factory.whatsappAccessToken) {
+                const accessToken = decrypt(factory.whatsappAccessToken);
+                fetchProfilePicture(accessToken, phoneNumberId, customerPhone).then(async (url) => {
+                    if (url) {
+                        await prisma.lead.update({
+                            where: { id: lead.id },
+                            data: { profilePicture: url },
+                        });
+                    }
+                }).catch(() => { /* silently ignore */ });
+            }
 
             if (isNewLead) {
                 // Determine Sales team numbers for alerts

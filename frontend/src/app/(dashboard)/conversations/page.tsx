@@ -18,6 +18,7 @@ interface Conversation {
     id: string;
     customerPhone: string;
     customerName: string | null;
+    profilePicture: string | null;
     status: string;
     lastMessage: string;
     lastMessageSender: string | null;
@@ -36,6 +37,7 @@ interface LeadInfo {
     id: string;
     customerPhone: string;
     customerName: string | null;
+    profilePicture: string | null;
     status: string;
     productInterest: string | null;
     createdAt: string;
@@ -170,6 +172,31 @@ export default function ConversationsPage() {
         CLOSED: 'bg-green-100 text-green-700',
     };
 
+    // Format phone: strip leading country code 91 for Indian numbers, show last 10 digits
+    const formatPhone = (phone: string) => {
+        const digits = phone.replace(/\D/g, '');
+        if (digits.startsWith('91') && digits.length === 12) return `+91 ${digits.slice(2, 7)} ${digits.slice(7)}`;
+        return `+${digits}`;
+    };
+
+    // Avatar component: shows profile picture or colored initial circle
+    const Avatar = ({ name, phone, pic, size = 'md' }: { name: string | null; phone: string; pic: string | null; size?: 'sm' | 'md' | 'lg' }) => {
+        const sizeClass = size === 'lg' ? 'w-12 h-12 text-base' : size === 'sm' ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm';
+        const label = (name || phone || '?')[0].toUpperCase();
+        if (pic) {
+            return (
+                <img src={pic} alt={name || phone} className={`${sizeClass} rounded-full object-cover flex-shrink-0`}
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; (e.currentTarget.nextSibling as HTMLElement)!.style.display = 'flex'; }}
+                />
+            );
+        }
+        return (
+            <div className={`${sizeClass} bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0`}>
+                {label}
+            </div>
+        );
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
@@ -212,27 +239,30 @@ export default function ConversationsPage() {
                                 onClick={() => selectConversation(conv.id)}
                                 className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors ${selectedId === conv.id ? 'bg-indigo-50 border-l-2 border-l-indigo-500' : ''}`}
                             >
-                                <div className="flex items-start justify-between gap-2">
+                                <div className="flex items-start gap-3">
+                                    <Avatar name={conv.customerName} phone={conv.customerPhone} pic={conv.profilePicture} size="sm" />
                                     <div className="min-w-0 flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-semibold text-sm text-gray-900 truncate">
-                                                {conv.customerName || conv.customerPhone}
-                                            </span>
-                                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${statusColor[conv.status] || 'bg-gray-100 text-gray-600'}`}>
-                                                {conv.status}
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <span className="font-semibold text-sm text-gray-900 truncate">
+                                                    {conv.customerName || formatPhone(conv.customerPhone)}
+                                                </span>
+                                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${statusColor[conv.status] || 'bg-gray-100 text-gray-600'}`}>
+                                                    {conv.status}
+                                                </span>
+                                            </div>
+                                            <span className="text-[10px] text-gray-400 flex-shrink-0">
+                                                {formatTime(conv.lastMessageTime)}
                                             </span>
                                         </div>
                                         {conv.customerName && (
-                                            <div className="text-xs text-gray-400">{conv.customerPhone}</div>
+                                            <div className="text-xs text-gray-400">{formatPhone(conv.customerPhone)}</div>
                                         )}
                                         <p className="text-xs text-gray-500 truncate mt-0.5">
                                             {conv.lastMessageSender === 'CUSTOMER' ? '' : '✓ '}
                                             {conv.lastMessage}
                                         </p>
                                     </div>
-                                    <span className="text-[10px] text-gray-400 flex-shrink-0 mt-0.5">
-                                        {formatTime(conv.lastMessageTime)}
-                                    </span>
                                 </div>
                             </button>
                         ))
@@ -257,14 +287,17 @@ export default function ConversationsPage() {
                             <button onClick={() => setSelectedId(null)} className="md:hidden p-1 hover:bg-gray-100 rounded">
                                 <ArrowLeft className="w-5 h-5" />
                             </button>
-                            <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                                {(leadInfo?.customerName || leadInfo?.customerPhone || '?')[0].toUpperCase()}
-                            </div>
+                            <Avatar
+                                name={leadInfo?.customerName || null}
+                                phone={leadInfo?.customerPhone || ''}
+                                pic={leadInfo?.profilePicture || null}
+                                size="md"
+                            />
                             <div className="flex-1 min-w-0">
                                 <h3 className="font-semibold text-gray-900 truncate">
-                                    {leadInfo?.customerName || leadInfo?.customerPhone}
+                                    {leadInfo?.customerName || formatPhone(leadInfo?.customerPhone || '')}
                                 </h3>
-                                <p className="text-xs text-gray-500">{leadInfo?.customerPhone}</p>
+                                <p className="text-xs text-gray-500">{formatPhone(leadInfo?.customerPhone || '')}</p>
                             </div>
                             {leadInfo && (
                                 <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColor[leadInfo.status] || 'bg-gray-100'}`}>

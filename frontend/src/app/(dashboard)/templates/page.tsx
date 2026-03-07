@@ -164,8 +164,8 @@ function Modal({ children, title, icon, onClose }: { children: React.ReactNode; 
 
 // ─── Main Page ───────────────────────────────────────────────────────────────
 export default function TemplatesPage() {
-    const [templates, setTemplates] = useState<Template[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [templates, setTemplates] = useState<Template[]>(META_DEFAULT_TEMPLATES as Template[]);
+    const [loading, setLoading] = useState(false);
     const [view, setView] = useState<ViewMode>('library');
     const [searchQ, setSearchQ] = useState('');
     const [filterCat, setFilterCat] = useState('');
@@ -195,7 +195,8 @@ export default function TemplatesPage() {
     const [sendHeaderVar, setSendHeaderVar] = useState('');
     const [sendHeaderMediaUrl, setSendHeaderMediaUrl] = useState('');
 
-    const fetchTemplates = useCallback(async () => {
+    const fetchTemplates = useCallback(async (showSpinner = false) => {
+        if (showSpinner) setLoading(true);
         let apiTemplates: Template[] = [];
         try {
             const params = new URLSearchParams();
@@ -218,7 +219,7 @@ export default function TemplatesPage() {
         setLoading(false);
     }, [filterCat, filterStatus]);
 
-    useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
+    useEffect(() => { fetchTemplates(false); }, [fetchTemplates]);
 
     const resetForm = () => {
         setFormName(''); setFormCategory('MARKETING'); setFormLanguage('en');
@@ -365,9 +366,16 @@ export default function TemplatesPage() {
 
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault(); if (!selected) return;
+        // Validate 10-digit phone number
+        if (!/^\d{10}$/.test(sendPhone)) {
+            setError('Please enter a valid 10-digit mobile number.');
+            return;
+        }
         setError(''); setSaving(true);
         try {
             const components = buildSendComponents();
+            // Prepend India country code
+            const fullPhone = `91${sendPhone}`;
 
             // Build full text content for storage in conversations
             const headerComp = selected.components?.find((c: any) => c.type === 'HEADER');
@@ -388,7 +396,7 @@ export default function TemplatesPage() {
                 templateContent += `\n\n${footerComp.text}`;
             }
 
-            const body: any = { to: sendPhone, templateName: selected.name, languageCode: selected.language, templateContent: templateContent.trim() };
+            const body: any = { to: fullPhone, templateName: selected.name, languageCode: selected.language, templateContent: templateContent.trim() };
             if (components.length > 0) body.components = components;
 
             const res = await fetch(`${API}/send`, {
@@ -717,9 +725,22 @@ export default function TemplatesPage() {
 
                     {/* Phone Number */}
                     <div>
-                        <label className="block text-sm font-semibold text-slate-900 mb-2">Phone Number (with country code)</label>
-                        <input required value={sendPhone} onChange={e => setSendPhone(e.target.value)} placeholder="e.g. 919876543210"
-                            className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-sm" />
+                        <label className="block text-sm font-semibold text-slate-900 mb-2">Mobile Number</label>
+                        <div className="flex rounded-xl border border-slate-300 focus-within:ring-2 focus-within:ring-indigo-500 overflow-hidden">
+                            <span className="flex items-center px-3 bg-slate-100 text-slate-500 text-sm font-medium border-r border-slate-300 select-none">+91</span>
+                            <input
+                                required
+                                value={sendPhone}
+                                onChange={e => setSendPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                                placeholder="10-digit number"
+                                maxLength={10}
+                                inputMode="numeric"
+                                className="flex-1 px-4 py-2.5 outline-none text-sm bg-white"
+                            />
+                        </div>
+                        {sendPhone.length > 0 && sendPhone.length < 10 && (
+                            <p className="text-xs text-amber-600 mt-1">{10 - sendPhone.length} more digits needed</p>
+                        )}
                     </div>
 
                     {/* Customization Section */}
@@ -887,12 +908,12 @@ export default function TemplatesPage() {
                     <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Search templates..."
                         className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white" />
                 </div>
-                <select value={filterCat} onChange={e => { setFilterCat(e.target.value); setFilterGroup(''); setLoading(true); }}
+                <select value={filterCat} onChange={e => { setFilterCat(e.target.value); setFilterGroup(''); }}
                     className="px-4 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
                     <option value="">All Categories</option>
                     {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                 </select>
-                <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setLoading(true); }}
+                <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); }}
                     className="px-4 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
                     <option value="">All Statuses</option>
                     <option value="APPROVED">Approved</option>
@@ -906,7 +927,7 @@ export default function TemplatesPage() {
                         <X className="w-3.5 h-3.5 ml-1" />
                     </button>
                 )}
-                <button onClick={() => { setLoading(true); fetchTemplates(); }}
+                <button onClick={() => fetchTemplates(true)}
                     className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100 transition">
                     <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                 </button>
