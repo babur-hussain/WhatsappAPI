@@ -1,4 +1,10 @@
 services:
+  - type: redis
+    name: loomiflow-redis
+    region: oregon
+    plan: starter
+    ipAllowList: [] # empty means all allowing access only from other services in the same render account
+
   - type: web
     name: loomiflow-backend
     env: docker
@@ -27,9 +33,3 @@ databases:
     plan: starter
     databaseName: loomiflow
     user: loomiflow
-
-  - type: redis
-    name: loomiflow-redis
-    region: oregon
-    plan: starter
-    ipAllowList: [] # empty means all allowing access only from other services in the same render account
