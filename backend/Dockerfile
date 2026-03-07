@@ -45,6 +45,7 @@ COPY --from=builder /app/backend/prisma ./backend/prisma
 
 # Intentionally skip dev dependencies for prod
 RUN pnpm install --prod --frozen-lockfile
+RUN npx prisma generate
 
 # Expose backend port
 EXPOSE 8000
