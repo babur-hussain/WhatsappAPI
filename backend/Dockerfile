@@ -43,7 +43,7 @@ COPY --from=builder /app/backend/package.json ./backend/
 COPY --from=builder /app/backend/dist ./backend/dist
 COPY --from=builder /app/backend/prisma ./backend/prisma
 
-# Intentionally skip dev dependencies for prod
+WORKDIR /app/backend
 RUN pnpm install --prod --frozen-lockfile
 RUN npx prisma generate
 
@@ -51,7 +51,7 @@ RUN npx prisma generate
 EXPOSE 8000
 EXPOSE 5001
 
-WORKDIR /app/backend
+
 
 # Need Prisma CLI to run migrations in production
 RUN pnpm install prisma
