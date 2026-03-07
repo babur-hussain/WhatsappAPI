@@ -23,7 +23,7 @@ COPY backend/ ./backend/
 
 # Generate Prisma Client
 WORKDIR /app/backend
-RUN pnpm dlx prisma generate
+RUN npx prisma generate
 
 # Build backend typescript
 RUN pnpm run build
