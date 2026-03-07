@@ -173,6 +173,7 @@ export default function TemplatesPage() {
     const [filterGroup, setFilterGroup] = useState('');
     const [expandedCategory, setExpandedCategory] = useState<string>('UTILITY');
     const [selected, setSelected] = useState<Template | null>(null);
+    const [showLibrary, setShowLibrary] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [saving, setSaving] = useState(false);
@@ -465,7 +466,14 @@ export default function TemplatesPage() {
         setFormBody(formBody + `{{${nextVar}}}`);
     };
 
+    const myTemplates = templates.filter(t => !t.isDefault);
+    const myTemplateCount = myTemplates.length;
+
     const filtered = templates.filter(t => {
+        // When not showing library, hide default templates
+        if (!showLibrary && t.isDefault) return false;
+        // When showing library, hide non-default (my) templates
+        if (showLibrary && !t.isDefault) return false;
         if (searchQ && !t.name.toLowerCase().includes(searchQ.toLowerCase())) return false;
         if (t.isDefault && filterCat && t.category !== filterCat) return false;
         if (t.isDefault && filterStatus && t.status !== filterStatus) return false;
@@ -888,7 +896,7 @@ export default function TemplatesPage() {
                         <FileText className="w-8 h-8 mr-3 text-indigo-600" /> Message Templates
                     </h1>
                     <p className="text-slate-500 mt-1">Create, manage, and send WhatsApp message templates via Meta API.
-                        <span className="ml-2 text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{templates.length} templates</span>
+                        <span className="ml-2 text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{showLibrary ? templates.filter(t => t.isDefault).length : myTemplateCount} templates</span>
                     </p>
                 </div>
                 <button onClick={() => { resetForm(); setView('create'); }}
@@ -943,53 +951,78 @@ export default function TemplatesPage() {
                             <h3 className="text-sm font-bold text-slate-900">Template Groups</h3>
                         </div>
 
-                        {/* All Templates */}
-                        <button onClick={() => setFilterGroup('')}
-                            className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between transition ${!filterGroup ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}>
-                            <span>All Templates</span>
-                            <span className="text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{templates.length}</span>
+                        {/* My Templates (default) */}
+                        <button onClick={() => { setShowLibrary(false); setFilterGroup(''); }}
+                            className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between transition ${!showLibrary ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}>
+                            <span className="flex items-center gap-2">
+                                <FileText className="w-3.5 h-3.5 text-indigo-500" /> My Templates
+                            </span>
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${!showLibrary ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600'}`}>{myTemplateCount}</span>
                         </button>
 
-                        {/* Utility Section */}
-                        <button onClick={() => setExpandedCategory(expandedCategory === 'UTILITY' ? '' : 'UTILITY')}
-                            className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-700 flex items-center justify-between hover:bg-slate-50 transition border-t border-slate-100">
-                            <span className="flex items-center gap-2">
-                                <FileText className="w-3.5 h-3.5 text-blue-500" /> Utility
-                                <span className="text-xs font-semibold bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full">151</span>
-                            </span>
-                            {expandedCategory === 'UTILITY' ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                        </button>
-                        {expandedCategory === 'UTILITY' && utilityGroups.map(g => (
-                            <button key={g.name} onClick={() => setFilterGroup(filterGroup === g.name ? '' : g.name)}
-                                className={`w-full text-left pl-8 pr-4 py-2 text-xs flex items-center justify-between transition ${filterGroup === g.name ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}>
-                                <span className="truncate">{g.name}</span>
-                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${filterGroup === g.name ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-500'}`}>{groupCounts[g.name] || g.count}</span>
+                        {/* Meta Library Section */}
+                        <div className="border-t border-slate-100">
+                            <button onClick={() => { setShowLibrary(true); setFilterGroup(''); }}
+                                className={`w-full text-left px-4 py-2.5 text-sm font-bold flex items-center justify-between transition ${showLibrary && !filterGroup ? 'bg-teal-50 text-teal-700' : 'text-slate-700 hover:bg-slate-50'}`}>
+                                <span className="flex items-center gap-2">
+                                    <Zap className="w-3.5 h-3.5 text-teal-500" /> Meta Library
+                                    <span className="text-xs font-semibold bg-teal-50 text-teal-600 px-1.5 py-0.5 rounded-full">{templates.filter(t => t.isDefault).length}</span>
+                                </span>
+                                {showLibrary ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                             </button>
-                        ))}
 
-                        {/* Authentication Section */}
-                        <button onClick={() => setExpandedCategory(expandedCategory === 'AUTHENTICATION' ? '' : 'AUTHENTICATION')}
-                            className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-700 flex items-center justify-between hover:bg-slate-50 transition border-t border-slate-100">
-                            <span className="flex items-center gap-2">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Authentication
-                                <span className="text-xs font-semibold bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded-full">19</span>
-                            </span>
-                            {expandedCategory === 'AUTHENTICATION' ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                        </button>
-                        {expandedCategory === 'AUTHENTICATION' && authGroups.map(g => (
-                            <button key={g.name} onClick={() => setFilterGroup(filterGroup === g.name ? '' : g.name)}
-                                className={`w-full text-left pl-8 pr-4 py-2 text-xs flex items-center justify-between transition ${filterGroup === g.name ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}>
-                                <span className="truncate">{g.name}</span>
-                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${filterGroup === g.name ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-500'}`}>{groupCounts[g.name] || g.count}</span>
-                            </button>
-                        ))}
+                            {showLibrary && (
+                                <>
+                                    {/* All Library Templates */}
+                                    <button onClick={() => setFilterGroup('')}
+                                        className={`w-full text-left pl-6 pr-4 py-2 text-xs flex items-center justify-between transition ${showLibrary && !filterGroup ? 'bg-teal-50/50 text-teal-700 font-semibold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}>
+                                        <span>All Library</span>
+                                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${showLibrary && !filterGroup ? 'bg-teal-100 text-teal-700' : 'bg-slate-100 text-slate-500'}`}>{templates.filter(t => t.isDefault).length}</span>
+                                    </button>
+
+                                    {/* Utility Section */}
+                                    <button onClick={() => setExpandedCategory(expandedCategory === 'UTILITY' ? '' : 'UTILITY')}
+                                        className="w-full text-left pl-6 pr-4 py-2 text-xs font-bold text-slate-600 flex items-center justify-between hover:bg-slate-50 transition">
+                                        <span className="flex items-center gap-2">
+                                            <FileText className="w-3 h-3 text-blue-500" /> Utility
+                                            <span className="text-[10px] font-semibold bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full">151</span>
+                                        </span>
+                                        {expandedCategory === 'UTILITY' ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                                    </button>
+                                    {expandedCategory === 'UTILITY' && utilityGroups.map(g => (
+                                        <button key={g.name} onClick={() => setFilterGroup(filterGroup === g.name ? '' : g.name)}
+                                            className={`w-full text-left pl-10 pr-4 py-1.5 text-xs flex items-center justify-between transition ${filterGroup === g.name ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}>
+                                            <span className="truncate">{g.name}</span>
+                                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${filterGroup === g.name ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-500'}`}>{groupCounts[g.name] || g.count}</span>
+                                        </button>
+                                    ))}
+
+                                    {/* Authentication Section */}
+                                    <button onClick={() => setExpandedCategory(expandedCategory === 'AUTHENTICATION' ? '' : 'AUTHENTICATION')}
+                                        className="w-full text-left pl-6 pr-4 py-2 text-xs font-bold text-slate-600 flex items-center justify-between hover:bg-slate-50 transition">
+                                        <span className="flex items-center gap-2">
+                                            <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Authentication
+                                            <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded-full">19</span>
+                                        </span>
+                                        {expandedCategory === 'AUTHENTICATION' ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                                    </button>
+                                    {expandedCategory === 'AUTHENTICATION' && authGroups.map(g => (
+                                        <button key={g.name} onClick={() => setFilterGroup(filterGroup === g.name ? '' : g.name)}
+                                            className={`w-full text-left pl-10 pr-4 py-1.5 text-xs flex items-center justify-between transition ${filterGroup === g.name ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}>
+                                            <span className="truncate">{g.name}</span>
+                                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${filterGroup === g.name ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-500'}`}>{groupCounts[g.name] || g.count}</span>
+                                        </button>
+                                    ))}
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
 
                 {/* ─── Template Grid ────────────────────────────────── */}
                 <div className="flex-1 min-w-0">
                     {/* Results count */}
-                    <p className="text-xs text-slate-500 mb-4 font-medium">Showing {filtered.length} of {templates.length} templates{filterGroup && <> in <span className="text-indigo-600 font-semibold">{filterGroup}</span></>}</p>
+                    <p className="text-xs text-slate-500 mb-4 font-medium">Showing {filtered.length} {showLibrary ? 'library' : ''} templates{filterGroup && <> in <span className="text-indigo-600 font-semibold">{filterGroup}</span></>}</p>
 
             {/* Content */}
             {loading ? (
