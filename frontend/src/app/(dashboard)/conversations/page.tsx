@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Send, Sparkles, Loader2, MessageCircle, ArrowLeft, User, Bot } from "lucide-react";
+import { io, Socket } from 'socket.io-client';
 
 const API_BASE = 'http://localhost:8000/api/v1/conversations';
 
@@ -56,6 +57,7 @@ export default function ConversationsPage() {
     const [aiLoading, setAiLoading] = useState(false);
     const [aiSuggestion, setAiSuggestion] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const socketRef = useRef<Socket | null>(null);
 
     const getHeaders = () => ({
         'Authorization': `Bearer ${getCookie('accessToken')}`,
@@ -64,7 +66,69 @@ export default function ConversationsPage() {
 
     useEffect(() => {
         fetchConversations();
+
+        // Initialize Socket connection
+        const token = getCookie('accessToken');
+        if (token) {
+            socketRef.current = io('http://localhost:5001', {
+                auth: { token }
+            });
+
+            socketRef.current.on('connect', () => {
+                console.log('Connected to socket server');
+            });
+
+            return () => {
+                if (socketRef.current) {
+                    socketRef.current.disconnect();
+                }
+            };
+        }
     }, []);
+
+    useEffect(() => {
+        if (!socketRef.current) return;
+
+        const handleNewMessage = (data: { leadId: string, message: Message, lead: Conversation }) => {
+            console.log('Received new_message event:', data);
+            
+            // Update messages if we have this conversation open
+            if (selectedId === data.leadId) {
+                setMessages(prev => {
+                    // Check if message already exists (prevent duplicates)
+                    if (prev.some(m => m.id === data.message.id)) return prev;
+                    return [...prev, data.message];
+                });
+            }
+
+            // Update conversations list unconditionally
+            setConversations(prev => {
+                const existingIndex = prev.findIndex(c => c.id === data.leadId);
+                let newConvs = [...prev];
+                
+                if (existingIndex >= 0) {
+                    const conv = newConvs.splice(existingIndex, 1)[0];
+                    newConvs.unshift({
+                        ...conv,
+                        status: data.lead.status || conv.status,
+                        lastMessage: data.lead.lastMessage,
+                        lastMessageSender: data.lead.lastMessageSender,
+                        lastMessageTime: data.lead.lastMessageTime
+                    });
+                } else {
+                    newConvs.unshift(data.lead);
+                }
+                
+                return newConvs;
+            });
+        };
+
+        socketRef.current.on('new_message', handleNewMessage);
+
+        return () => {
+            socketRef.current?.off('new_message', handleNewMessage);
+        };
+    }, [selectedId]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

@@ -1,11 +1,9 @@
 import { Server as HttpServer } from 'http';
 import { Server, Socket } from 'socket.io';
-import { verify } from 'jsonwebtoken';
+import { auth } from '../config/firebase';
+import prisma from '../config/database';
 
 let io: Server;
-
-// Temporary mock secret for development. Replace with real JWT_SECRET later.
-const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
 export const initSocketServer = (httpServer: HttpServer) => {
     io = new Server(httpServer, {
@@ -15,27 +13,30 @@ export const initSocketServer = (httpServer: HttpServer) => {
         }
     });
 
-    io.use((socket, next) => {
+    io.use(async (socket, next) => {
         try {
-            // Mock authentication strategy for development 
-            // where we pass the token and factoryId in auth payload
             const token = socket.handshake.auth.token;
-            const factoryId = socket.handshake.auth.factoryId;
 
-            if (token === 'test' && factoryId) {
-                socket.data.factoryId = factoryId;
-                return next();
+            if (!token) {
+                return next(new Error('Authentication error: No token provided'));
             }
 
-            // Real JWT Verification
-            if (token && token !== 'test') {
-                const decoded = verify(token, JWT_SECRET) as { factoryId: string };
-                socket.data.factoryId = decoded.factoryId;
-                return next();
+            // Verify Firebase token
+            const decodedToken = await auth.verifyIdToken(token);
+            
+            // Find user in database to get factoryId
+            const user = await prisma.user.findUnique({
+                where: { firebaseUid: decodedToken.uid }
+            });
+
+            if (!user || (!user.factoryId && user.role !== 'SUPER_ADMIN')) {
+                return next(new Error('Authentication error: User or Factory not found'));
             }
 
-            return next(new Error('Authentication error'));
+            socket.data.factoryId = user.factoryId;
+            return next();
         } catch (err) {
+            console.error('Socket Auth Error:', err);
             return next(new Error('Authentication error'));
         }
     });

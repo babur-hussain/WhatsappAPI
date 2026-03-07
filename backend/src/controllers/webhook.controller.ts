@@ -3,6 +3,7 @@ import { leadService } from '../services/lead.service';
 import { followUpService } from '../services/followup.service';
 import { notificationService } from '../services/notification.service';
 import { enqueueAiReply, enqueueNotification } from '../config/queue';
+import { getIO } from '../socket/socket.server';
 import prisma from '../config/database';
 import catchAsync from '../utils/catch-async';
 import { decrypt } from '../utils/crypto.util';
@@ -60,6 +61,7 @@ export const receiveWebhook = catchAsync(async (req: Request, res: Response) => 
             body.entry[0].changes[0].value.messages &&
             body.entry[0].changes[0].value.messages[0]
         ) {
+            console.log('Webhook Received a Message Event:', JSON.stringify(body.entry[0].changes[0].value.messages[0]));
             const metadata = body.entry[0].changes[0].value.metadata;
             const message = body.entry[0].changes[0].value.messages[0];
             // contacts array contains sender display name from WhatsApp
@@ -105,6 +107,35 @@ export const receiveWebhook = catchAsync(async (req: Request, res: Response) => 
                         });
                     }
                 }).catch(() => { /* silently ignore */ });
+            }
+
+            // Real-time update to frontend via WebSockets
+            const io = getIO();
+            if (io) {
+                const messagePayload = {
+                    leadId: lead.id,
+                    message: {
+                        id: Math.random().toString(36).substring(7), // Temporary ID until DB save if not available
+                        content: messageText,
+                        sender: 'CUSTOMER',
+                        timestamp: timestamp.toISOString()
+                    },
+                    lead: {
+                        id: lead.id,
+                        customerPhone: lead.customerPhone,
+                        customerName: lead.customerName,
+                        profilePicture: lead.profilePicture,
+                        status: lead.status,
+                        lastMessage: messageText,
+                        lastMessageSender: 'CUSTOMER',
+                        lastMessageTime: timestamp.toISOString(),
+                        messageCount: 1 // Example
+                    }
+                };
+                console.log(`Emitting new_message to room factory:${factory.id}`);
+                io.to(`factory:${factory.id}`).emit('new_message', messagePayload);
+                // Also emit globally for debugging
+                io.emit('new_message', messagePayload);
             }
 
             if (isNewLead) {

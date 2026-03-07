@@ -84,11 +84,7 @@ app.use((req: Request, res: Response) => {
 // Global Error Handler
 app.use(globalErrorHandler);
 
-const SOCKET_PORT = env.SOCKET_PORT;
-
 // Start both Express and Socket.IO on their respective ports, or same port if configured
-httpServer.listen(SOCKET_PORT, () => {
-  logger.info(`Socket.IO Server running on port ${SOCKET_PORT}`);
-});
+// The main server starts listening in src/index.ts using this combined httpServer.
 
-export default app;
+export { app, httpServer };
