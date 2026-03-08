@@ -25,6 +25,7 @@ interface Conversation {
     lastMessageSender: string | null;
     lastMessageTime: string;
     messageCount: number;
+    unreadCount: number;
 }
 
 interface Message {
@@ -106,6 +107,8 @@ export default function ConversationsPage() {
                 const existingIndex = prev.findIndex(c => c.id === data.leadId);
                 let newConvs = [...prev];
                 
+                const isCurrentlyOpen = selectedId === data.leadId;
+
                 if (existingIndex >= 0) {
                     const conv = newConvs.splice(existingIndex, 1)[0];
                     newConvs.unshift({
@@ -113,12 +116,21 @@ export default function ConversationsPage() {
                         status: data.lead.status || conv.status,
                         lastMessage: data.lead.lastMessage,
                         lastMessageSender: data.lead.lastMessageSender,
-                        lastMessageTime: data.lead.lastMessageTime
+                        lastMessageTime: data.lead.lastMessageTime,
+                        unreadCount: isCurrentlyOpen ? 0 : (data.lead.unreadCount ?? (conv.unreadCount + 1))
                     });
                 } else {
-                    newConvs.unshift(data.lead);
+                    newConvs.unshift({
+                        ...data.lead,
+                        unreadCount: isCurrentlyOpen ? 0 : (data.lead.unreadCount ?? 1)
+                    });
                 }
                 
+                // If it's open, tell the backend we read it
+                if (isCurrentlyOpen) {
+                    fetch(`${API_BASE}/${data.leadId}/read`, { method: 'POST', headers: { 'Authorization': `Bearer ${getCookie('accessToken')}` } }).catch(() => {});
+                }
+
                 return newConvs;
             });
         };
@@ -160,6 +172,9 @@ export default function ConversationsPage() {
             if (data.success) {
                 setMessages(data.data.messages);
                 setLeadInfo(data.data.lead);
+                
+                // Clear the unread badge locally for instant UI update
+                setConversations(prev => prev.map(c => c.id === id ? { ...c, unreadCount: 0 } : c));
             }
         } catch (e) {
             console.error('Failed to fetch messages:', e);
@@ -308,21 +323,28 @@ export default function ConversationsPage() {
                                     <div className="min-w-0 flex-1">
                                         <div className="flex items-center justify-between gap-2">
                                             <div className="flex items-center gap-2 min-w-0">
-                                                <span className="font-semibold text-sm text-gray-900 truncate">
+                                                <span className={`font-semibold text-sm truncate ${conv.unreadCount > 0 ? 'text-gray-900' : 'text-gray-700'}`}>
                                                     {conv.customerName || formatPhone(conv.customerPhone)}
                                                 </span>
                                                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${statusColor[conv.status] || 'bg-gray-100 text-gray-600'}`}>
                                                     {conv.status}
                                                 </span>
                                             </div>
-                                            <span className="text-[10px] text-gray-400 flex-shrink-0">
-                                                {formatTime(conv.lastMessageTime)}
-                                            </span>
+                                            <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                                                <span className={`text-[10px] ${conv.unreadCount > 0 ? 'text-indigo-600 font-semibold' : 'text-gray-400'}`}>
+                                                    {formatTime(conv.lastMessageTime)}
+                                                </span>
+                                                {conv.unreadCount > 0 && (
+                                                    <span className="bg-indigo-600 text-white text-[10px] font-bold px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center">
+                                                        {conv.unreadCount}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                         {conv.customerName && (
                                             <div className="text-xs text-gray-400">{formatPhone(conv.customerPhone)}</div>
                                         )}
-                                        <p className="text-xs text-gray-500 truncate mt-0.5">
+                                        <p className={`text-xs truncate mt-0.5 ${conv.unreadCount > 0 ? 'font-medium text-gray-900' : 'text-gray-500'}`}>
                                             {conv.lastMessageSender === 'CUSTOMER' ? '' : '✓ '}
                                             {conv.lastMessage}
                                         </p>
