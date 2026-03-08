@@ -30,8 +30,9 @@ export default function SmartRepliesPage() {
     const fetchSettings = async () => {
         setIsLoading(true);
         try {
+            const token = document.cookie.match(/(?:^|;\s*)accessToken=([^;]+)/)?.[1] || "";
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/settings/auto-reply`, {
-                headers: { 'Authorization': `Bearer ${document.cookie}` }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
             
@@ -56,6 +57,7 @@ export default function SmartRepliesPage() {
     const handleSave = async () => {
         setIsSaving(true);
         try {
+            const token = document.cookie.match(/(?:^|;\s*)accessToken=([^;]+)/)?.[1] || "";
             const payload = {
                 autoReplyEnabled: enabled,
                 autoReplyType: replyType,
@@ -67,7 +69,7 @@ export default function SmartRepliesPage() {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/settings/auto-reply`, {
                 method: 'PATCH',
                 headers: { 
-                    'Authorization': `Bearer ${document.cookie}`,
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(payload)

@@ -24,7 +24,8 @@ export default function WhatsAppSettingsPage() {
         });
 
         // Fetch User
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me`, { headers: { 'Authorization': `Bearer ${document.cookie}` } })
+        const token = document.cookie.match(/(?:^|;\s*)accessToken=([^;]+)/)?.[1] || "";
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me`, { headers: { 'Authorization': `Bearer ${token}` } })
             .then(res => res.json())
             .then(data => {
                 if (data.success && data.data.factory) {

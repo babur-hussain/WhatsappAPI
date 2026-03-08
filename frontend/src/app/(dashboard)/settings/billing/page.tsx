@@ -30,8 +30,9 @@ export default function BillingPage() {
         // Fetch billing data
         const fetchBillingData = async () => {
             try {
+                const token = document.cookie.match(/(?:^|;\s*)accessToken=([^;]+)/)?.[1] || "";
                 const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/billing/subscription`, {
-                    headers: { 'Authorization': `Bearer ${document.cookie}` } // Placeholder
+                    headers: { 'Authorization': `Bearer ${token}` } // Placeholder
                 });
                 const data = await response.json();
 
