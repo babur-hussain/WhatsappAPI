@@ -61,6 +61,7 @@ export const getConversations = catchAsync(async (req: AuthRequest, res: Respons
         lastMessageSender: lead.messages[0]?.sender || null,
         lastMessageTime: lead.messages[0]?.timestamp || lead.updatedAt,
         messageCount: lead._count.messages,
+        unreadCount: lead.unreadCount || 0,
     }));
 
     res.status(200).json(successResponse({
@@ -96,6 +97,14 @@ export const getMessages = catchAsync(async (req: AuthRequest, res: Response) =>
         }),
         prisma.message.count({ where: { leadId } }),
     ]);
+
+    // Reset unread count when messages are fetched
+    if ((lead as any).unreadCount > 0) {
+        await prisma.lead.update({
+            where: { id: leadId },
+            data: { unreadCount: 0 } as any
+        });
+    }
 
     res.status(200).json(successResponse({
         lead: {
@@ -157,4 +166,26 @@ export const getSuggestedReply = catchAsync(async (req: AuthRequest, res: Respon
     const analysis = await aiService.generateSuggestedReply(factoryId, leadId);
 
     res.status(200).json(successResponse(analysis));
+});
+
+/**
+ * Manually mark a conversation as read
+ */
+export const markAsRead = catchAsync(async (req: AuthRequest, res: Response) => {
+    const factoryId = req.user?.factoryId;
+    if (!factoryId) return res.status(401).json(errorResponse('Unauthorized'));
+
+    const leadId = req.params.leadId;
+
+    const lead = await prisma.lead.findFirst({ where: { id: leadId, factoryId } });
+    if (!lead) return res.status(404).json(errorResponse('Conversation not found'));
+
+    if ((lead as any).unreadCount > 0) {
+        await prisma.lead.update({
+            where: { id: leadId },
+            data: { unreadCount: 0 } as any
+        });
+    }
+
+    res.status(200).json(successResponse({ unreadCount: 0 }));
 });

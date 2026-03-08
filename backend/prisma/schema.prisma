@@ -211,6 +211,7 @@ model Lead {
   responseTimeSeconds    Int?
   closedAt               DateTime?
   leadValue              Float?
+  unreadCount            Int                  @default(0)
   firstCustomerMessageAt DateTime?
   firstResponseAt        DateTime?
   createdAt              DateTime             @default(now())

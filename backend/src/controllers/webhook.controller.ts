@@ -132,7 +132,8 @@ export const receiveWebhook = catchAsync(async (req: Request, res: Response) => 
                         lastMessage: messageText,
                         lastMessageSender: 'CUSTOMER',
                         lastMessageTime: timestamp.toISOString(),
-                        messageCount: 1 // Example
+                        messageCount: 1, // Example
+                        unreadCount: (lead as any).unreadCount
                     }
                 };
                 console.log(`Emitting new_message to room factory:${factory.id}`);

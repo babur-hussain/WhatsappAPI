@@ -39,6 +39,7 @@ export class LeadService {
                         status: LeadStatus.NEW,
                         source: LeadSource.WHATSAPP,
                         firstCustomerMessageAt: timestamp,
+                        unreadCount: 1,
                     },
                 });
 
@@ -56,6 +57,7 @@ export class LeadService {
                 const updateData: any = {
                     lastMessage: messageText,
                     updatedAt: new Date(),
+                    unreadCount: { increment: 1 },
                 };
                 if (!lead.firstCustomerMessageAt) {
                     updateData.firstCustomerMessageAt = timestamp;
@@ -129,18 +131,28 @@ export class LeadService {
                     (timestamp.getTime() - lead.firstCustomerMessageAt.getTime()) / 1000
                 );
 
+                const updateData: any = {
+                    firstResponseAt: timestamp,
+                    responseTimeSeconds,
+                    lastMessage: content,
+                };
+                if (sender === SenderType.ADMIN) {
+                    updateData.unreadCount = 0;
+                }
+
                 await tx.lead.update({
                     where: { id: leadId },
-                    data: {
-                        firstResponseAt: timestamp,
-                        responseTimeSeconds,
-                        lastMessage: content,
-                    },
+                    data: updateData,
                 });
             } else {
+                const updateData: any = { lastMessage: content };
+                if (sender === SenderType.ADMIN) {
+                    updateData.unreadCount = 0;
+                }
+
                 await tx.lead.update({
                     where: { id: leadId },
-                    data: { lastMessage: content },
+                    data: updateData,
                 });
             }
 

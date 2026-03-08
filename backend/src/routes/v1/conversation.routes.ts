@@ -10,5 +10,6 @@ router.get('/', conversationController.getConversations);
 router.get('/:leadId/messages', conversationController.getMessages);
 router.post('/:leadId/reply', conversationController.sendReply);
 router.get('/:leadId/suggest', conversationController.getSuggestedReply);
+router.post('/:leadId/read', conversationController.markAsRead);
 
 export default router;
