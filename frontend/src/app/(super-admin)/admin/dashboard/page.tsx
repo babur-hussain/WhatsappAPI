@@ -23,7 +23,7 @@ export default function AdminDashboardPage() {
         const fetchStats = async (user: FirebaseUser) => {
             try {
                 const token = await user.getIdToken();
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://16.170.213.68:8000'}/api/v1/admin/stats`, {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://whatsappapi.lfvs.in'}/api/v1/admin/stats`, {
                     headers: {
                         Authorization: `Bearer ${token}`
                     }

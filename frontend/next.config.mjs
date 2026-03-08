@@ -7,7 +7,7 @@ const nextConfig = {
                 source: '/api/:path*',
                 destination: process.env.NEXT_PUBLIC_API_URL
                     ? `${process.env.NEXT_PUBLIC_API_URL}/api/:path*`
-                    : 'http://16.170.213.68:8000/api/:path*',
+                    : 'https://whatsappapi.lfvs.in/api/:path*',
             },
         ]
     },

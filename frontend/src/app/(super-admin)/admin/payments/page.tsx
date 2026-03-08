@@ -36,7 +36,7 @@ export default function AdminPaymentsPage() {
     useEffect(() => {
         const fetchPayments = async (token: string) => {
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://16.170.213.68:8000'}/api/v1/admin/payments`, {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://whatsappapi.lfvs.in'}/api/v1/admin/payments`, {
                     headers: {
                         Authorization: `Bearer ${token}`
                     }

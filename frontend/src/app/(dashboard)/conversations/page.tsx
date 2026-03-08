@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Search, Send, Sparkles, Loader2, MessageCircle, ArrowLeft, User, Bot } from "lucide-react";
 import { io, Socket } from 'socket.io-client';
 
-const API_BASE = 'http://16.170.213.68:8000/api/v1/conversations';
+const API_BASE = 'https://whatsappapi.lfvs.in/api/v1/conversations';
 
 function getCookie(name: string) {
     if (typeof document === 'undefined') return '';
@@ -70,7 +70,7 @@ export default function ConversationsPage() {
         // Initialize Socket connection
         const token = getCookie('accessToken');
         if (token) {
-            socketRef.current = io('http://16.170.213.68:8000', {
+            socketRef.current = io('https://whatsappapi.lfvs.in', {
                 auth: { token }
             });
 

@@ -1,7 +1,7 @@
 import { io } from 'socket.io-client';
 
 // In production, this would be an env var
-const URL = 'http://16.170.213.68:8000';
+const URL = 'https://whatsappapi.lfvs.in';
 
 // Replace with logic that fetches valid token when implementing full auth
 const token = 'test';

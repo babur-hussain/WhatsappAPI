@@ -18,7 +18,7 @@ export function NotificationBell() {
 
     // Auth mock
     const factoryId = 'mock-factory-id';
-    const apiUrl = 'http://16.170.213.68:8000/api/v1/notifications';
+    const apiUrl = 'https://whatsappapi.lfvs.in/api/v1/notifications';
     const headers = {
         'Authorization': 'Bearer test',
         'x-factory-id': factoryId,

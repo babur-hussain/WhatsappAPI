@@ -21,7 +21,7 @@ export default function AdminFactoryDetailsPage() {
     useEffect(() => {
         const fetchFactory = async (token: string) => {
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://16.170.213.68:8000'}/api/v1/admin/factories/${params.id}`, {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://whatsappapi.lfvs.in'}/api/v1/admin/factories/${params.id}`, {
                     headers: {
                         Authorization: `Bearer ${token}`
                     }

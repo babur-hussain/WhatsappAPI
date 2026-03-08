@@ -30,7 +30,7 @@ interface Broadcast {
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
-const API_BASE = 'http://16.170.213.68:8000/api/v1/broadcasts';
+const API_BASE = 'https://whatsappapi.lfvs.in/api/v1/broadcasts';
 const HEADERS = {
     'Authorization': 'Bearer test',
     'Content-Type': 'application/json',

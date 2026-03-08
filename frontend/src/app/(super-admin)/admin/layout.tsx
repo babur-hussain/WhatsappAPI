@@ -36,7 +36,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             try {
                 const token = await user.getIdToken();
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://16.170.213.68:8000'}/api/v1/auth/me`, {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://whatsappapi.lfvs.in'}/api/v1/auth/me`, {
                     headers: {
                         Authorization: `Bearer ${token}`
                     }
