@@ -30,7 +30,7 @@ export default function BillingPage() {
         // Fetch billing data
         const fetchBillingData = async () => {
             try {
-                const response = await fetch(`\${process.env.NEXT_PUBLIC_API_URL}/api/v1/billing/subscription', {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/billing/subscription`, {
                     headers: { 'Authorization': `Bearer ${document.cookie}` } // Placeholder
                 });
                 const data = await response.json();
@@ -52,7 +52,7 @@ export default function BillingPage() {
     const handleSubscribe = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch(`\${process.env.NEXT_PUBLIC_API_URL}/api/v1/billing/create-subscription', {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/billing/create-subscription`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ planId: 'plan_XXXX', planName: 'Pro' })
@@ -77,7 +77,7 @@ export default function BillingPage() {
 
         setIsLoading(true);
         try {
-            const res = await fetch(`\${process.env.NEXT_PUBLIC_API_URL}/api/v1/billing/cancel', { method: 'POST' });
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/billing/cancel`, { method: 'POST' });
             const data = await res.json();
 
             if (data.success) {

@@ -26,7 +26,7 @@ export default function OnboardingPage() {
 
     useEffect(() => {
         // Fetch current onboarding status
-        fetch(`\${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me', { headers: { 'Authorization': `Bearer ${getAuthToken()}` } }) // Simplified auth header
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me`, { headers: { 'Authorization': `Bearer ${getAuthToken()}` } }) // Simplified auth header
             .then(res => res.json())
             .then(data => {
                 if (data.success && data.data.factory) {
@@ -47,7 +47,7 @@ export default function OnboardingPage() {
     const handleConnectWhatsapp = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch(`\${process.env.NEXT_PUBLIC_API_URL}/api/v1/factory/whatsapp-number', {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/factory/whatsapp-number`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ whatsappNumber, whatsappPhoneNumberId: phoneNumberId })
@@ -75,7 +75,7 @@ export default function OnboardingPage() {
         formData.append('file', file);
 
         try {
-            const res = await fetch(`\${process.env.NEXT_PUBLIC_API_URL}/api/v1/catalog/upload', {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/catalog/upload`, {
                 method: 'POST',
                 body: formData
             });
@@ -96,7 +96,7 @@ export default function OnboardingPage() {
     const completeOnboarding = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch(`\${process.env.NEXT_PUBLIC_API_URL}/api/v1/factory/complete-onboarding', {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/factory/complete-onboarding`, {
                 method: 'PATCH',
                 headers: { 'Authorization': `Bearer ${getAuthToken()}` }
             });

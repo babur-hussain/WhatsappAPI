@@ -28,7 +28,7 @@ export default function LoginPage() {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const idToken = await userCredential.user.getIdToken();
 
-            const res = await fetch(`\${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/sync', {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/sync`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${idToken}`,
