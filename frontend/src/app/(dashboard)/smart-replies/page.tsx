@@ -61,9 +61,9 @@ export default function SmartRepliesPage() {
             const payload = {
                 autoReplyEnabled: enabled,
                 autoReplyType: replyType,
-                autoReplyStaticMessage: staticMessage,
-                autoReplyAiPrompt: aiPrompt,
-                autoReplyAiModel: aiModel
+                autoReplyStaticMessage: staticMessage || "Thank you for your message! Our team will get back to you shortly.",
+                autoReplyAiPrompt: aiPrompt || "You are a professional AI sales assistant.\nYour job is to:\n1. Reply professionally, helpfully, and concisely.\n2. Assist customers with inquiries.",
+                autoReplyAiModel: aiModel || "gpt-4o-mini"
             };
 
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/settings/auto-reply`, {
