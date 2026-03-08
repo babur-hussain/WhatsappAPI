@@ -44,7 +44,7 @@ export default function RegisterPage() {
             }
             const idToken = await userCredential.user.getIdToken();
 
-            const res = await fetch('/api/v1/auth/sync', {
+            const res = await fetch(`\${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/sync', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${idToken}`,
