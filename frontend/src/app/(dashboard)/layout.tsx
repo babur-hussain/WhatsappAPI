@@ -15,6 +15,7 @@ export default function DashboardLayout({
                 <nav className="flex-1 overflow-y-auto p-4 space-y-2 text-sm text-slate-300 font-medium tracking-wide">
                     <Link href="/" className="block px-3 py-2 rounded-lg hover:bg-slate-800 cursor-pointer">Dashboard</Link>
                     <Link href="/conversations" className="block px-3 py-2 rounded-lg hover:bg-slate-800 cursor-pointer">Conversations</Link>
+                    <Link href="/smart-replies" className="block px-3 py-2 rounded-lg hover:bg-slate-800 cursor-pointer text-indigo-400 font-semibold">Smart Replies</Link>
                     <Link href="/leads" className="block px-3 py-2 rounded-lg hover:bg-slate-800 cursor-pointer">Leads</Link>
                     <Link href="/broadcasts" className="block px-3 py-2 rounded-lg hover:bg-slate-800 cursor-pointer">Broadcasts</Link>
                     <Link href="/orders" className="block px-3 py-2 rounded-lg hover:bg-slate-800 cursor-pointer">Orders</Link>
