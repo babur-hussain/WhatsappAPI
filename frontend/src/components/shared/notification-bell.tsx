@@ -11,18 +11,21 @@ interface Notification {
     isRead: boolean;
     createdAt: string;
 }
+function getCookie(name: string) {
+    if (typeof document === 'undefined') return '';
+    const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    return match ? match[2] : '';
+}
 
 export function NotificationBell() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
 
-    // Auth mock
-    const factoryId = 'mock-factory-id';
     const apiUrl = 'https://whatsappapi.lfvs.in/api/v1/notifications';
-    const headers = {
-        'Authorization': 'Bearer test',
-        'x-factory-id': factoryId,
-    };
+
+    const getHeaders = () => ({
+        'Authorization': `Bearer ${getCookie('accessToken')}`
+    });
 
     useEffect(() => {
         fetchNotifications();
@@ -33,7 +36,7 @@ export function NotificationBell() {
 
     const fetchNotifications = async () => {
         try {
-            const res = await fetch(apiUrl, { headers });
+            const res = await fetch(apiUrl, { headers: getHeaders() });
             if (res.ok) {
                 const data = await res.json();
                 setNotifications(data);
@@ -44,7 +47,7 @@ export function NotificationBell() {
 
     const markAsRead = async (id: string) => {
         try {
-            await fetch(`${apiUrl}/${id}/read`, { method: 'PATCH', headers });
+            await fetch(`${apiUrl}/${id}/read`, { method: 'PATCH', headers: getHeaders() });
             setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
             setUnreadCount(prev => Math.max(0, prev - 1));
         } catch (e) { }
