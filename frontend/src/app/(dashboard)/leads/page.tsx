@@ -51,7 +51,7 @@ export default function LeadsPage() {
     const [orderForm, setOrderForm] = useState({ productName: '', quantity: 1, unitPrice: 0, notes: '' });
     const [orderFormSaving, setOrderFormSaving] = useState(false);
 
-    const apiUrl = 'https://loomiflow-backend-production-db59.up.railway.app/api/v1/leads';
+    const apiUrl = 'http://16.170.213.68:8000/api/v1/leads';
     const headers = {
         'Authorization': 'Bearer test',
         'x-factory-id': factoryId,

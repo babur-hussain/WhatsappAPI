@@ -28,7 +28,7 @@ type ViewMode = 'library' | 'create' | 'edit' | 'preview' | 'send' | 'bulk-send'
 // Meta templates are imported from @/lib/metaTemplateLibrary
 
 // ─── Constants ───────────────────────────────────────────────────────────────
-const API = 'https://loomiflow-backend-production-db59.up.railway.app/api/v1/templates';
+const API = 'http://16.170.213.68:8000/api/v1/templates';
 
 const getAuthHeaders = async (): Promise<Record<string, string>> => {
     const user = auth.currentUser;
