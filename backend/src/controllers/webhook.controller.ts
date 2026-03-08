@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { leadService } from '../services/lead.service';
 import { followUpService } from '../services/followup.service';
 import { notificationService } from '../services/notification.service';
-import { enqueueAiReply, enqueueNotification } from '../config/queue';
+import { enqueueAiReply, enqueueNotification, enqueueMessage } from '../config/queue';
 import { getIO } from '../socket/socket.server';
 import prisma from '../config/database';
 import catchAsync from '../utils/catch-async';
@@ -176,13 +176,33 @@ export const receiveWebhook = catchAsync(async (req: Request, res: Response) => 
                     contextStr = `The factory has a catalog available at ${latestCatalog.fileUrl}. Mention they can view it.`;
                 }
 
-                // Queue AI Smart Reply
-                await enqueueAiReply({
-                    factoryId: factory.id,
-                    customerPhone,
-                    messageText,
-                    context: contextStr
-                });
+                if (factory.autoReplyEnabled) {
+                    if (factory.autoReplyType === 'AI') {
+                        // Queue AI Smart Reply
+                        await enqueueAiReply({
+                            factoryId: factory.id,
+                            customerPhone,
+                            messageText,
+                            context: contextStr
+                        });
+                    } else if (factory.autoReplyType === 'STATIC') {
+                        const staticText = factory.autoReplyStaticMessage || 'Thank you for your message! Our team will get back to you shortly.';
+                        await enqueueMessage({
+                            factoryId: factory.id,
+                            to: customerPhone,
+                            text: staticText,
+                            type: 'text'
+                        });
+                        
+                        await leadService.processOutgoingMessage({
+                            leadId: lead.id,
+                            factoryId: factory.id,
+                            content: staticText,
+                            sender: 'BOT',
+                            timestamp: new Date()
+                        });
+                    }
+                }
 
                 // Create internal notification
                 await notificationService.createNewLeadNotification(factory.id, customerPhone);
@@ -193,13 +213,15 @@ export const receiveWebhook = catchAsync(async (req: Request, res: Response) => 
                 // Cancel pending follow-ups since customer responded
                 await followUpService.cancelPendingFollowUps(lead.id);
 
-                // For existing leads, also queue AI reply to continue conversation (optional based on logic)
-                await enqueueAiReply({
-                    factoryId: factory.id,
-                    customerPhone,
-                    messageText,
-                    context: 'Customer is continuing conversation. Be helpful.'
-                });
+                if (factory.autoReplyEnabled && factory.autoReplyType === 'AI') {
+                    // For existing leads, queue AI reply to continue conversation
+                    await enqueueAiReply({
+                        factoryId: factory.id,
+                        customerPhone,
+                        messageText,
+                        context: 'Customer is continuing conversation. Be helpful.'
+                    });
+                }
             }
         }
 

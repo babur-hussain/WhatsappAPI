@@ -48,3 +48,51 @@ export const updateWebhookConfig = catchAsync(async (req: AuthRequest, res: Resp
 
     res.status(200).json(successResponse(factory));
 });
+
+export const getAutoReplySettings = catchAsync(async (req: AuthRequest, res: Response) => {
+    const factoryId = req.user?.factoryId;
+    if (!factoryId) return res.status(401).json(errorResponse('Unauthorized', 'UNAUTHORIZED'));
+
+    const factory = await prisma.factory.findUnique({
+        where: { id: factoryId },
+        select: {
+            autoReplyEnabled: true,
+            autoReplyType: true,
+            autoReplyStaticMessage: true,
+            autoReplyAiPrompt: true,
+            autoReplyAiModel: true,
+        }
+    });
+
+    if (!factory) return res.status(404).json(errorResponse('Factory not found'));
+
+    res.status(200).json(successResponse(factory));
+});
+
+export const updateAutoReplySettings = catchAsync(async (req: AuthRequest, res: Response) => {
+    const factoryId = req.user?.factoryId;
+    if (!factoryId) return res.status(401).json(errorResponse('Unauthorized', 'UNAUTHORIZED'));
+
+    const { autoReplyEnabled, autoReplyType, autoReplyStaticMessage, autoReplyAiPrompt, autoReplyAiModel } = req.body;
+
+    const data: any = {};
+    if (autoReplyEnabled !== undefined) data.autoReplyEnabled = autoReplyEnabled;
+    if (autoReplyType) data.autoReplyType = autoReplyType;
+    if (autoReplyStaticMessage !== undefined) data.autoReplyStaticMessage = autoReplyStaticMessage;
+    if (autoReplyAiPrompt !== undefined) data.autoReplyAiPrompt = autoReplyAiPrompt;
+    if (autoReplyAiModel) data.autoReplyAiModel = autoReplyAiModel;
+
+    const factory = await prisma.factory.update({
+        where: { id: factoryId },
+        data,
+        select: {
+            autoReplyEnabled: true,
+            autoReplyType: true,
+            autoReplyStaticMessage: true,
+            autoReplyAiPrompt: true,
+            autoReplyAiModel: true,
+        }
+    });
+
+    res.status(200).json(successResponse(factory));
+});

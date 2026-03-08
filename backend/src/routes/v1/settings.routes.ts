@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getApiKey, regenerateApiKey, updateWebhookConfig } from '../../controllers/settings.controller';
+import { getApiKey, regenerateApiKey, updateWebhookConfig, getAutoReplySettings, updateAutoReplySettings } from '../../controllers/settings.controller';
 import { protect } from '../../middlewares/firebase-auth.middleware';
 
 const router = Router();
@@ -12,5 +12,9 @@ router.route('/api-key')
 
 router.route('/webhook')
     .put(updateWebhookConfig);
+
+router.route('/auto-reply')
+    .get(getAutoReplySettings)
+    .patch(updateAutoReplySettings);
 
 export default router;

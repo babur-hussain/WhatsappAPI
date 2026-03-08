@@ -13,7 +13,10 @@ enum Role {
   SALES
 }
 
-
+enum AutoReplyType {
+  STATIC
+  AI
+}
 
 model SuperAdmin {
   id          String   @id @default(uuid())
@@ -101,45 +104,53 @@ enum OrderSource {
 }
 
 model Factory {
-  id                    String         @id @default(uuid())
-  factoryName           String
-  ownerName             String
-  email                 String         @unique
-  phone                 String?
-  whatsappNumber        String?
-  whatsappPhoneNumberId String?
-  whatsappAccessToken   String?
+  id                        String  @id @default(uuid())
+  factoryName               String
+  ownerName                 String
+  email                     String  @unique
+  phone                     String?
+  whatsappNumber            String?
+  whatsappPhoneNumberId     String?
+  whatsappAccessToken       String?
   whatsappBusinessAccountId String?
-  isWhatsappConnected   Boolean        @default(false)
-  isCatalogUploaded     Boolean        @default(false)
-  isOnboardingComplete  Boolean        @default(false)
-  isActive              Boolean        @default(true)
-  apiKey                String?        @unique
-  webhookUrl            String?
-  webhookSecret         String?
-  followUpsEnabled      Boolean        @default(true)
-  followUp1Enabled      Boolean        @default(true)
-  followUp2Enabled      Boolean        @default(true)
-  followUp3Enabled      Boolean        @default(true)
-  followUp1Delay        Int            @default(21600)
-  followUp2Delay        Int            @default(86400)
-  followUp3Delay        Int            @default(259200)
-  followUp1Message      String?
-  followUp2Message      String?
-  followUp3Message      String?
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
-  users                 User[]
-  leads                 Lead[]
-  messages              Message[]
-  catalogs              Catalog[]
-  notifications         Notification[]
-  subscriptions         Subscription[]
-  payments              Payment[]
-  leadActivities        LeadActivity[]
-  followUps             FollowUp[]
-  broadcasts            Broadcast[]
-  orders                Order[]
+  isWhatsappConnected       Boolean @default(false)
+  isCatalogUploaded         Boolean @default(false)
+  isOnboardingComplete      Boolean @default(false)
+  isActive                  Boolean @default(true)
+  apiKey                    String? @unique
+  webhookUrl                String?
+  webhookSecret             String?
+  followUpsEnabled          Boolean @default(true)
+  followUp1Enabled          Boolean @default(true)
+  followUp2Enabled          Boolean @default(true)
+  followUp3Enabled          Boolean @default(true)
+  followUp1Delay            Int     @default(21600)
+  followUp2Delay            Int     @default(86400)
+  followUp3Delay            Int     @default(259200)
+  followUp1Message          String?
+  followUp2Message          String?
+  followUp3Message          String?
+
+  // Auto-Reply Settings
+  autoReplyEnabled       Boolean       @default(true)
+  autoReplyType          AutoReplyType @default(STATIC)
+  autoReplyStaticMessage String?       @db.Text
+  autoReplyAiPrompt      String?       @db.Text
+  autoReplyAiModel       String?       @default("gpt-4o-mini")
+
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  users          User[]
+  leads          Lead[]
+  messages       Message[]
+  catalogs       Catalog[]
+  notifications  Notification[]
+  subscriptions  Subscription[]
+  payments       Payment[]
+  leadActivities LeadActivity[]
+  followUps      FollowUp[]
+  broadcasts     Broadcast[]
+  orders         Order[]
 }
 
 model User {
@@ -356,4 +367,3 @@ model Order {
   @@index([createdAt])
   @@index([orderStatus])
 }
-

@@ -80,12 +80,16 @@ export const aiService = {
             }
         }
 
-        const systemPrompt = `You are a professional AI sales assistant for "${factory.factoryName}".
+        const defaultSystemPrompt = `You are a professional AI sales assistant for "${factory.factoryName}".
 Your job is to:
 1. Reply professionally, helpfully, and concisely to convert the customer into a buyer
 2. Detect customer intent (are they asking about products? ready to order? want to talk later?)
 3. If the customer mentions a timeline (e.g. "tomorrow", "next week", "Monday"), note the follow-up date
-4. If the customer mentions specific products, quantities, or asks for pricing, extract order details
+4. If the customer mentions specific products, quantities, or asks for pricing, extract order details`;
+
+        const baseSystemPrompt = factory.autoReplyAiPrompt || defaultSystemPrompt;
+
+        const systemPrompt = `${baseSystemPrompt}
 
 Context: ${context || 'None'}${conversationContext}
 
@@ -108,7 +112,7 @@ Intent meanings:
 Today's date is: ${new Date().toISOString().split('T')[0]}`;
 
         const completion = await openai.chat.completions.create({
-            model: 'gpt-4o',
+            model: factory.autoReplyAiModel || 'gpt-4o',
             messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: customerMessage }
