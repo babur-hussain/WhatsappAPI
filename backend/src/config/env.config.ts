@@ -18,7 +18,7 @@ const envSchema = z.object({
     META_ACCESS_TOKEN: z.string().optional(),
     RAZORPAY_KEY_ID: z.string().optional(),
     RAZORPAY_KEY_SECRET: z.string().optional(),
-    CORS_ORIGINS: z.string().default('http://localhost:3000'),
+    CORS_ORIGINS: z.string().default('http://localhost:3000,https://whatsapp-api-frontend-drab.vercel.app'),
     ENCRYPTION_KEY: z.string().length(64, 'Encryption key must be exactly 32 bytes (64 hex characters)'),
 });
 
