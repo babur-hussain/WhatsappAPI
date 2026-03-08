@@ -74,10 +74,13 @@ export const receiveWebhook = catchAsync(async (req: Request, res: Response) => 
             const messageText = message.text?.body || '[Media message]';
             const timestamp = new Date(parseInt(message.timestamp) * 1000);
 
-            // Find the factory by the WhatsApp number
+            // Find the factory by the WhatsApp number or Phone Number ID
             const factory = await prisma.factory.findFirst({
                 where: {
-                    whatsappNumber: businessPhoneNumber,
+                    OR: [
+                        { whatsappPhoneNumberId: phoneNumberId },
+                        { whatsappNumber: businessPhoneNumber }
+                    ]
                 },
             });
 
