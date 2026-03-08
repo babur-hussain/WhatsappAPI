@@ -20,6 +20,11 @@ const envSchema = z.object({
     RAZORPAY_KEY_SECRET: z.string().optional(),
     CORS_ORIGINS: z.string().default('http://localhost:3000,https://whatsapp-api-frontend-drab.vercel.app'),
     ENCRYPTION_KEY: z.string().length(64, 'Encryption key must be exactly 32 bytes (64 hex characters)'),
+    // AWS S3
+    AWS_REGION: z.string().default('us-east-1'),
+    AWS_ACCESS_KEY_ID: z.string().min(1, 'AWS_ACCESS_KEY_ID is required'),
+    AWS_SECRET_ACCESS_KEY: z.string().min(1, 'AWS_SECRET_ACCESS_KEY is required'),
+    AWS_S3_BUCKET: z.string().min(1, 'AWS_S3_BUCKET is required'),
 });
 
 const validateEnv = () => {

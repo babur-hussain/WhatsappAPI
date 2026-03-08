@@ -15,6 +15,7 @@ import settingsRoutes from './settings.routes';
 import whatsappRoutes from './whatsapp.routes';
 import conversationRoutes from './conversation.routes';
 import templateRoutes from './template.routes';
+import uploadRoutes from './upload.routes';
 
 const router = Router();
 
@@ -34,5 +35,6 @@ router.use('/settings', settingsRoutes);
 router.use('/whatsapp', whatsappRoutes);
 router.use('/conversations', conversationRoutes);
 router.use('/templates', templateRoutes);
+router.use('/upload', uploadRoutes);
 
 export default router;
