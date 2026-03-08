@@ -38,9 +38,11 @@ export function NotificationBell() {
         try {
             const res = await fetch(apiUrl, { headers: getHeaders() });
             if (res.ok) {
-                const data = await res.json();
-                setNotifications(data);
-                setUnreadCount(data.filter((n: Notification) => !n.isRead).length);
+                const json = await res.json();
+                if (json.success && Array.isArray(json.data)) {
+                    setNotifications(json.data);
+                    setUnreadCount(json.data.filter((n: Notification) => !n.isRead).length);
+                }
             }
         } catch (e) { }
     };
