@@ -43,6 +43,9 @@ ssh -i $EC2_KEY_PATH $EC2_USER@$EC2_HOST << 'EOF'
   echo "Rebuilding backend image and starting services..."
   sudo docker compose -f docker-compose.prod.yml up -d --build backend
   
+  echo "Applying database schema changes..."
+  sudo docker compose -f docker-compose.prod.yml exec backend npx prisma db push --accept-data-loss
+  
   echo "Cleaning up dangling images..."
   sudo docker image prune -f
   
