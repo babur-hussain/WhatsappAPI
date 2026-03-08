@@ -213,14 +213,33 @@ export const receiveWebhook = catchAsync(async (req: Request, res: Response) => 
                 // Cancel pending follow-ups since customer responded
                 await followUpService.cancelPendingFollowUps(lead.id);
 
-                if (factory.autoReplyEnabled && factory.autoReplyType === 'AI') {
-                    // For existing leads, queue AI reply to continue conversation
-                    await enqueueAiReply({
-                        factoryId: factory.id,
-                        customerPhone,
-                        messageText,
-                        context: 'Customer is continuing conversation. Be helpful.'
-                    });
+                if (factory.autoReplyEnabled) {
+                    if (factory.autoReplyType === 'AI') {
+                        // For existing leads, queue AI reply to continue conversation
+                        await enqueueAiReply({
+                            factoryId: factory.id,
+                            customerPhone,
+                            messageText,
+                            context: 'Customer is continuing conversation. Be helpful.'
+                        });
+                    } else if (factory.autoReplyType === 'STATIC') {
+                        // Always send the static reply to old leads as well, as requested
+                        const staticText = factory.autoReplyStaticMessage || 'Thank you for your message! Our team will get back to you shortly.';
+                        await enqueueMessage({
+                            factoryId: factory.id,
+                            to: customerPhone,
+                            text: staticText,
+                            type: 'text'
+                        });
+                        
+                        await leadService.processOutgoingMessage({
+                            leadId: lead.id,
+                            factoryId: factory.id,
+                            content: staticText,
+                            sender: 'BOT',
+                            timestamp: new Date()
+                        });
+                    }
                 }
             }
         }
