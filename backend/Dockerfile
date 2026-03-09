@@ -23,7 +23,7 @@ COPY backend/ ./backend/
 
 # Generate Prisma Client
 WORKDIR /app/backend
-RUN npx prisma generate
+RUN pnpm exec prisma generate
 
 # Build backend typescript
 RUN pnpm run build
@@ -45,7 +45,7 @@ COPY --from=builder /app/backend/prisma ./backend/prisma
 
 WORKDIR /app/backend
 RUN pnpm install --prod --frozen-lockfile
-RUN npx prisma generate
+RUN pnpm exec prisma generate
 
 # Expose backend port
 EXPOSE 8000
@@ -54,7 +54,7 @@ EXPOSE 5001
 
 
 # Need Prisma CLI to run migrations in production
-RUN pnpm install prisma
+RUN pnpm add prisma@5
 
 # Start the application
 CMD ["pnpm", "run", "start:prod"]
