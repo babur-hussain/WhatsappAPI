@@ -8,6 +8,7 @@ import {
     deleteContact,
     deleteContacts,
     importContacts,
+    previewImport,
     getImportHistory,
     createContactList,
     getContactLists,
@@ -54,6 +55,9 @@ router.route('/bulk-delete')
 // Import
 router.route('/import')
     .post(upload.single('file'), importContacts);
+
+router.route('/import/preview')
+    .post(upload.single('file'), previewImport);
 
 router.route('/import/history')
     .get(getImportHistory);

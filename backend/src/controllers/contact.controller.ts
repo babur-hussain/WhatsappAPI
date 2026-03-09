@@ -88,7 +88,7 @@ export const deleteContacts = catchAsync(async (req: AuthRequest, res: Response)
 
 // ─── Import CSV/Excel ───────────────────────────────────────────────────────
 
-export const importContacts = catchAsync(async (req: AuthRequest, res: Response) => {
+export const previewImport = catchAsync(async (req: AuthRequest, res: Response) => {
     const factoryId = req.user?.factoryId;
     if (!factoryId) return res.status(401).json(errorResponse('Unauthorized', 'UNAUTHORIZED'));
 
@@ -98,15 +98,41 @@ export const importContacts = catchAsync(async (req: AuthRequest, res: Response)
     const fileName = file.originalname || 'import';
     const ext = fileName.split('.').pop()?.toLowerCase();
 
+    try {
+        const previewData = contactService.getFilePreview(file.buffer, ext);
+        res.status(200).json(successResponse(previewData));
+    } catch (error) {
+        res.status(400).json(errorResponse(`Preview failed: ${(error as Error).message}`));
+    }
+});
+
+export const importContacts = catchAsync(async (req: AuthRequest, res: Response) => {
+    const factoryId = req.user?.factoryId;
+    if (!factoryId) return res.status(401).json(errorResponse('Unauthorized', 'UNAUTHORIZED'));
+
+    const file = (req as any).file;
+    if (!file) return res.status(400).json(errorResponse('File is required'));
+
+    const mappingsStr = req.body.mappings;
+    let mappings = undefined;
+    if (mappingsStr) {
+        try { mappings = JSON.parse(mappingsStr); } catch {}
+    }
+
+    const skipEmptyRows = req.body.skipEmptyRows !== 'false';
+
+    const fileName = file.originalname || 'import';
+    const ext = fileName.split('.').pop()?.toLowerCase();
+
     let rows;
     let source: ContactSource;
 
     try {
         if (ext === 'csv') {
-            rows = contactService.parseCSV(file.buffer);
+            rows = contactService.parseCSV(file.buffer, skipEmptyRows, mappings);
             source = ContactSource.CSV_IMPORT;
         } else if (ext === 'xlsx' || ext === 'xls') {
-            rows = contactService.parseExcel(file.buffer);
+            rows = contactService.parseExcel(file.buffer, mappings);
             source = ContactSource.EXCEL_IMPORT;
         } else {
             return res.status(400).json(errorResponse('Unsupported file type. Use CSV or Excel (.xlsx, .xls)'));
@@ -120,7 +146,7 @@ export const importContacts = catchAsync(async (req: AuthRequest, res: Response)
             return res.status(400).json(errorResponse('File exceeds maximum of 10,000 rows'));
         }
 
-        const result = await contactService.bulkImportContacts(factoryId, rows, source, fileName);
+        const result = await contactService.bulkImportContacts(factoryId, rows, source, fileName, skipEmptyRows);
         res.status(200).json(successResponse(result));
     } catch (error) {
         res.status(400).json(errorResponse(`Import failed: ${(error as Error).message}`));

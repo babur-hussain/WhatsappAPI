@@ -110,6 +110,11 @@ export default function ContactsPage() {
     const [importFile, setImportFile] = useState<File | null>(null);
     const [importing, setImporting] = useState(false);
     const [importResult, setImportResult] = useState<ImportJob | null>(null);
+    const [mappingPhase, setMappingPhase] = useState(false);
+    const [previewHeaders, setPreviewHeaders] = useState<string[]>([]);
+    const [previewRows, setPreviewRows] = useState<any[]>([]);
+    const [fieldMappings, setFieldMappings] = useState({ phone: '', name: '', email: '', company: '' });
+    const [skipEmptyRows, setSkipEmptyRows] = useState(true);
 
     // Add contact form
     const [formPhone, setFormPhone] = useState('');
@@ -277,8 +282,79 @@ export default function ContactsPage() {
         } catch { }
     };
 
+    const resetImportModal = () => {
+        setShowImportModal(false);
+        setImportFile(null);
+        setImportResult(null);
+        setErrorMsg('');
+        setMappingPhase(false);
+        setPreviewHeaders([]);
+        setPreviewRows([]);
+        setFieldMappings({ phone: '', name: '', email: '', company: '' });
+        setSkipEmptyRows(true);
+    };
+
+    const handlePreview = async () => {
+        if (!importFile) return;
+        setImporting(true);
+        setErrorMsg('');
+
+        try {
+            const formData = new FormData();
+            formData.append('file', importFile);
+
+            const res = await fetch(`${API_BASE}/import/preview`, {
+                method: 'POST',
+                headers: { 'Authorization': getHeaders().Authorization },
+                body: formData,
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                setPreviewHeaders(data.data.headers);
+                setPreviewRows(data.data.rows);
+                
+                // Auto-map if possible
+                const autoMap = { phone: '', name: '', email: '', company: '' };
+                const hrLowerCase = data.data.headers.map((h: string) => h.toLowerCase());
+                
+                ['phone', 'mobile', 'whatsapp', 'number'].forEach(kw => {
+                    const idx = hrLowerCase.findIndex((h: string) => h.includes(kw));
+                    if (idx !== -1 && !autoMap.phone) autoMap.phone = data.data.headers[idx];
+                });
+                ['name'].forEach(kw => {
+                    const idx = hrLowerCase.findIndex((h: string) => h.includes(kw));
+                    if (idx !== -1 && !autoMap.name) autoMap.name = data.data.headers[idx];
+                });
+                ['email', 'mail'].forEach(kw => {
+                    const idx = hrLowerCase.findIndex((h: string) => h.includes(kw));
+                    if (idx !== -1 && !autoMap.email) autoMap.email = data.data.headers[idx];
+                });
+                ['company', 'org', 'business'].forEach(kw => {
+                    const idx = hrLowerCase.findIndex((h: string) => h.includes(kw));
+                    if (idx !== -1 && !autoMap.company) autoMap.company = data.data.headers[idx];
+                });
+
+                setFieldMappings(autoMap);
+                setMappingPhase(true);
+            } else {
+                setErrorMsg(data.message || 'Failed to preview file');
+            }
+        } catch {
+            setErrorMsg('Failed to process file preview');
+        } finally {
+            setImporting(false);
+        }
+    };
+
     const handleImport = async () => {
         if (!importFile) return;
+        if (!fieldMappings.phone) {
+            setErrorMsg('You must select a column for Phone Number');
+            return;
+        }
+
         setImporting(true);
         setImportResult(null);
         setErrorMsg('');
@@ -286,6 +362,13 @@ export default function ContactsPage() {
         try {
             const formData = new FormData();
             formData.append('file', importFile);
+            formData.append('mappings', JSON.stringify({
+                phone: fieldMappings.phone,
+                ...(fieldMappings.name && { name: fieldMappings.name }),
+                ...(fieldMappings.email && { email: fieldMappings.email }),
+                ...(fieldMappings.company && { company: fieldMappings.company }),
+            }));
+            formData.append('skipEmptyRows', String(skipEmptyRows));
 
             const res = await fetch(`${API_BASE}/import`, {
                 method: 'POST',
@@ -723,7 +806,7 @@ export default function ContactsPage() {
                             <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                                 <Upload className="w-5 h-5 text-indigo-600" /> Import Contacts
                             </h2>
-                            <button onClick={() => { setShowImportModal(false); setImportFile(null); setImportResult(null); setErrorMsg(''); }}
+                            <button onClick={resetImportModal}
                                 className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg">
                                 <X className="w-5 h-5" />
                             </button>
@@ -755,7 +838,7 @@ export default function ContactsPage() {
                                             <p className="text-xs text-red-600">Failed</p>
                                         </div>
                                     </div>
-                                    <button onClick={() => { setShowImportModal(false); setImportFile(null); setImportResult(null); }}
+                                    <button onClick={resetImportModal}
                                         className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
                                     >
                                         Done
@@ -763,72 +846,128 @@ export default function ContactsPage() {
                                 </div>
                             ) : (
                                 <>
-                                    <div
-                                        className={`border-2 border-dashed rounded-2xl p-8 text-center transition cursor-pointer ${importFile ? 'border-indigo-400 bg-indigo-50/50' : 'border-slate-300 hover:border-indigo-400 hover:bg-slate-50'
-                                            }`}
-                                        onClick={() => document.getElementById('import-file-input')?.click()}
-                                        onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
-                                        onDrop={e => {
-                                            e.preventDefault(); e.stopPropagation();
-                                            const file = e.dataTransfer.files[0];
-                                            if (file) setImportFile(file);
-                                        }}
-                                    >
-                                        <input
-                                            id="import-file-input"
-                                            type="file"
-                                            accept=".csv,.xlsx,.xls"
-                                            className="hidden"
-                                            onChange={e => e.target.files?.[0] && setImportFile(e.target.files[0])}
-                                        />
-                                        {importFile ? (
-                                            <div className="flex items-center justify-center gap-3">
-                                                <FileSpreadsheet className="w-8 h-8 text-indigo-600" />
-                                                <div className="text-left">
-                                                    <p className="font-semibold text-slate-900">{importFile.name}</p>
-                                                    <p className="text-xs text-slate-500">{(importFile.size / 1024).toFixed(1)} KB</p>
-                                                </div>
+                                    {!mappingPhase ? (
+                                        <>
+                                            <div
+                                                className={`border-2 border-dashed rounded-2xl p-8 text-center transition cursor-pointer ${importFile ? 'border-indigo-400 bg-indigo-50/50' : 'border-slate-300 hover:border-indigo-400 hover:bg-slate-50'
+                                                    }`}
+                                                onClick={() => document.getElementById('import-file-input')?.click()}
+                                                onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
+                                                onDrop={e => {
+                                                    e.preventDefault(); e.stopPropagation();
+                                                    const file = e.dataTransfer.files[0];
+                                                    if (file) setImportFile(file);
+                                                }}
+                                            >
+                                                <input
+                                                    id="import-file-input"
+                                                    type="file"
+                                                    accept=".csv,.xlsx,.xls"
+                                                    className="hidden"
+                                                    onChange={e => e.target.files?.[0] && setImportFile(e.target.files[0])}
+                                                />
+                                                {importFile ? (
+                                                    <div className="flex items-center justify-center gap-3">
+                                                        <FileSpreadsheet className="w-8 h-8 text-indigo-600" />
+                                                        <div className="text-left">
+                                                            <p className="font-semibold text-slate-900">{importFile.name}</p>
+                                                            <p className="text-xs text-slate-500">{(importFile.size / 1024).toFixed(1)} KB</p>
+                                                        </div>
+                                                        <button
+                                                            onClick={e => { e.stopPropagation(); setImportFile(null); }}
+                                                            className="p-1 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500"
+                                                        >
+                                                            <X className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <Upload className="w-10 h-10 text-slate-400 mx-auto mb-3" />
+                                                        <p className="font-semibold text-slate-700">Drop your file here or click to browse</p>
+                                                        <p className="text-sm text-slate-400 mt-1">Supports CSV, Excel (.xlsx, .xls) · Max 10MB · Max 10,000 rows</p>
+                                                    </>
+                                                )}
+                                            </div>
+
+                                            <div className="flex justify-end gap-3 pt-2">
+                                                <button onClick={resetImportModal}
+                                                    className="px-5 py-2.5 rounded-xl font-semibold text-slate-600 hover:bg-slate-200 transition">
+                                                    Cancel
+                                                </button>
                                                 <button
-                                                    onClick={e => { e.stopPropagation(); setImportFile(null); }}
-                                                    className="p-1 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500"
+                                                    onClick={handlePreview}
+                                                    disabled={!importFile || importing}
+                                                    className="px-5 py-2.5 rounded-xl font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition disabled:opacity-50 flex items-center gap-2"
                                                 >
-                                                    <X className="w-4 h-4" />
+                                                    {importing ? (
+                                                        <><RefreshCw className="w-4 h-4 animate-spin" /> Processing...</>
+                                                    ) : (
+                                                        <>Next <ChevronRight className="w-4 h-4" /></>
+                                                    )}
                                                 </button>
                                             </div>
-                                        ) : (
-                                            <>
-                                                <Upload className="w-10 h-10 text-slate-400 mx-auto mb-3" />
-                                                <p className="font-semibold text-slate-700">Drop your file here or click to browse</p>
-                                                <p className="text-sm text-slate-400 mt-1">Supports CSV, Excel (.xlsx, .xls) · Max 10MB · Max 10,000 rows</p>
-                                            </>
-                                        )}
-                                    </div>
+                                        </>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            <div className="bg-indigo-50/50 rounded-xl p-4 border border-indigo-100 mb-4">
+                                                <h5 className="font-semibold text-sm text-indigo-900 mb-1">Map Your Columns</h5>
+                                                <p className="text-xs text-indigo-700">
+                                                    Match the columns from your file to the correct fields. Phone number is required.
+                                                </p>
+                                            </div>
 
-                                    <div className="bg-indigo-50/50 rounded-xl p-4 border border-indigo-100">
-                                        <h5 className="font-semibold text-sm text-indigo-900 mb-2">Column Mapping</h5>
-                                        <p className="text-xs text-indigo-700">
-                                            Your file should include a <strong>phone</strong> column (required). We auto-detect columns named:
-                                            phone, name, email, company. All other columns are saved as custom fields.
-                                        </p>
-                                    </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                {[
+                                                    { id: 'phone', label: 'Phone Number *', required: true },
+                                                    { id: 'name', label: 'Name', required: false },
+                                                    { id: 'email', label: 'Email', required: false },
+                                                    { id: 'company', label: 'Company', required: false },
+                                                ].map(field => (
+                                                    <div key={field.id}>
+                                                        <label className="block text-xs font-semibold text-slate-700 mb-1">{field.label}</label>
+                                                        <select
+                                                            className={`w-full text-sm px-3 py-2 rounded-lg border outline-none focus:ring-2 focus:ring-indigo-500 ${field.required && !fieldMappings[field.id as keyof typeof fieldMappings] ? 'border-red-300 bg-red-50' : 'border-slate-300'}`}
+                                                            value={fieldMappings[field.id as keyof typeof fieldMappings] || ''}
+                                                            onChange={e => setFieldMappings(prev => ({ ...prev, [field.id]: e.target.value }))}
+                                                        >
+                                                            <option value="">-- Don't Map --</option>
+                                                            {previewHeaders.map(h => (
+                                                                <option key={h} value={h}>{h}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                ))}
+                                            </div>
 
-                                    <div className="flex justify-end gap-3 pt-2">
-                                        <button onClick={() => { setShowImportModal(false); setImportFile(null); }}
-                                            className="px-5 py-2.5 rounded-xl font-semibold text-slate-600 hover:bg-slate-200 transition">
-                                            Cancel
-                                        </button>
-                                        <button
-                                            onClick={handleImport}
-                                            disabled={!importFile || importing}
-                                            className="px-5 py-2.5 rounded-xl font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition disabled:opacity-50 flex items-center gap-2"
-                                        >
-                                            {importing ? (
-                                                <><RefreshCw className="w-4 h-4 animate-spin" /> Importing...</>
-                                            ) : (
-                                                <><Upload className="w-4 h-4" /> Import Contacts</>
-                                            )}
-                                        </button>
-                                    </div>
+                                            <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer mt-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={skipEmptyRows}
+                                                    onChange={e => setSkipEmptyRows(e.target.checked)}
+                                                    className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600"
+                                                />
+                                                <span className="font-medium">Skip empty rows automatically</span>
+                                            </label>
+
+                                            <div className="flex justify-between items-center pt-2">
+                                                <button onClick={() => setMappingPhase(false)}
+                                                    className="px-4 py-2 rounded-xl font-semibold text-slate-600 hover:bg-slate-100 transition flex items-center gap-1">
+                                                    <ChevronLeft className="w-4 h-4" /> Back
+                                                </button>
+                                                <button
+                                                    onClick={handleImport}
+                                                    disabled={importing || !fieldMappings.phone}
+                                                    className="px-5 py-2.5 rounded-xl font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition disabled:opacity-50 flex items-center gap-2"
+                                                >
+                                                    {importing ? (
+                                                        <><RefreshCw className="w-4 h-4 animate-spin" /> Importing...</>
+                                                    ) : (
+                                                        <><CheckCircle2 className="w-4 h-4" /> Import Contacts</>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </>
                             )}
                         </div>

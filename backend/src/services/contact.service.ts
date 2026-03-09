@@ -24,6 +24,13 @@ export interface ContactFilters {
     limit?: number;
 }
 
+export interface FieldMapping {
+    phone: string;
+    name?: string;
+    email?: string;
+    company?: string;
+}
+
 interface ParsedRow {
     phone: string;
     name?: string;
@@ -85,7 +92,8 @@ export class ContactService {
         factoryId: string,
         rows: ParsedRow[],
         source: ContactSource,
-        fileName: string
+        fileName: string,
+        skipEmptyRows: boolean = true
     ) {
         // Create import job
         const importJob = await prisma.importJob.create({
@@ -105,13 +113,21 @@ export class ContactService {
         for (let i = 0; i < rows.length; i++) {
             const row = rows[i];
             try {
+                if (skipEmptyRows) {
+                    const hasData = Object.values(row).some(val => val && String(val).trim() !== '');
+                    if (!hasData) {
+                        skippedCount++;
+                        continue;
+                    }
+                }
+
                 if (!row.phone) {
                     skippedCount++;
                     errors.push({ row: i + 1, error: 'Missing phone number' });
                     continue;
                 }
 
-                const phoneCleaned = row.phone.replace(/\D/g, '');
+                const phoneCleaned = String(row.phone).replace(/\D/g, '');
                 if (phoneCleaned.length < 7 || phoneCleaned.length > 15) {
                     skippedCount++;
                     errors.push({ row: i + 1, error: 'Invalid phone number', phone: row.phone });
@@ -173,22 +189,22 @@ export class ContactService {
     /**
      * Parse CSV buffer into rows
      */
-    public parseCSV(buffer: Buffer): ParsedRow[] {
+    public parseCSV(buffer: Buffer, skipEmptyLines: boolean = true, mapping?: FieldMapping): ParsedRow[] {
         const content = buffer.toString('utf-8');
         const records: Record<string, string>[] = csvParse(content, {
             columns: true,
-            skip_empty_lines: true,
+            skip_empty_lines: skipEmptyLines,
             trim: true,
             relax_column_count: true,
         });
 
-        return records.map((record) => this.normalizeRow(record));
+        return records.map((record) => this.normalizeRow(record, mapping));
     }
 
     /**
      * Parse Excel buffer into rows
      */
-    public parseExcel(buffer: Buffer): ParsedRow[] {
+    public parseExcel(buffer: Buffer, mapping?: FieldMapping): ParsedRow[] {
         const workbook = XLSX.read(buffer, { type: 'buffer' });
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         const records: Record<string, string>[] = XLSX.utils.sheet_to_json(firstSheet, {
@@ -196,14 +212,32 @@ export class ContactService {
             raw: false,
         });
 
-        return records.map((record) => this.normalizeRow(record));
+        return records.map((record) => this.normalizeRow(record, mapping));
     }
 
     /**
      * Normalize a row's keys to standard names (phone, name, email, company)
      */
-    private normalizeRow(record: Record<string, string>): ParsedRow {
+    private normalizeRow(record: Record<string, string>, explicitMapping?: FieldMapping): ParsedRow {
         const normalized: ParsedRow = { phone: '' };
+
+        if (explicitMapping) {
+            for (const [key, value] of Object.entries(record)) {
+                if (key === explicitMapping.phone) {
+                    normalized.phone = String(value);
+                } else if (explicitMapping.name && key === explicitMapping.name) {
+                    normalized.name = String(value);
+                } else if (explicitMapping.email && key === explicitMapping.email) {
+                    normalized.email = String(value);
+                } else if (explicitMapping.company && key === explicitMapping.company) {
+                    normalized.company = String(value);
+                } else {
+                    normalized[key] = String(value);
+                }
+            }
+            return normalized;
+        }
+
         const keyMap: Record<string, string> = {
             'phone': 'phone', 'phone_number': 'phone', 'phonenumber': 'phone',
             'mobile': 'phone', 'mobile_number': 'phone', 'mobilenumber': 'phone',
@@ -226,17 +260,50 @@ export class ContactService {
                 if (mapped === 'name' && normalized.name && normalizedKey.includes('last')) {
                     normalized.name = `${normalized.name} ${value}`;
                 } else if (mapped === 'name' && !normalized.name) {
-                    normalized.name = value;
+                    normalized.name = String(value);
                 } else {
-                    (normalized as any)[mapped] = value;
+                    (normalized as any)[mapped] = String(value);
                 }
             } else {
                 // Store as custom field
-                normalized[normalizedKey] = value;
+                normalized[normalizedKey] = String(value);
             }
         }
 
         return normalized;
+    }
+
+    /**
+     * Extract headers and first 5 rows for mapping preview
+     */
+    public getFilePreview(buffer: Buffer, ext: string): { headers: string[], rows: Record<string, any>[] } {
+        let records: any[] = [];
+        
+        if (ext === 'csv') {
+            const content = buffer.toString('utf-8');
+            records = csvParse(content, {
+                columns: true,
+                skip_empty_lines: true,
+                trim: true,
+                relax_column_count: true,
+                to_line: 6
+            });
+        } else if (ext === 'xlsx' || ext === 'xls') {
+            const workbook = XLSX.read(buffer, { type: 'buffer' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            // We read a bit more rows, then slice, because sheet_to_json doesn't have a stop condition
+            const allRecords = XLSX.utils.sheet_to_json(firstSheet, { defval: '', raw: false });
+            records = allRecords.slice(0, 5);
+        } else {
+            throw new Error('Unsupported file type');
+        }
+
+        if (records.length === 0) {
+            return { headers: [], rows: [] };
+        }
+
+        const headers = Object.keys(records[0]);
+        return { headers, rows: records };
     }
 
     /**
