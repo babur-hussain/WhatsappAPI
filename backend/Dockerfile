@@ -23,7 +23,7 @@ COPY backend/ ./backend/
 
 # Generate Prisma Client
 WORKDIR /app/backend
-RUN pnpm exec prisma generate
+RUN npx prisma@5 generate
 
 # Build backend typescript
 RUN pnpm run build
@@ -45,8 +45,7 @@ COPY --from=builder /app/backend/prisma ./backend/prisma
 
 WORKDIR /app/backend
 RUN pnpm install --prod --frozen-lockfile
-RUN pnpm add prisma@5
-RUN pnpm exec prisma generate
+RUN npx prisma@5 generate
 
 # Expose backend port
 EXPOSE 8000
