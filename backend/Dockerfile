@@ -45,6 +45,7 @@ COPY --from=builder /app/backend/prisma ./backend/prisma
 
 WORKDIR /app/backend
 RUN pnpm install --prod --frozen-lockfile
+RUN pnpm add prisma@5
 RUN pnpm exec prisma generate
 
 # Expose backend port
@@ -53,8 +54,7 @@ EXPOSE 5001
 
 
 
-# Need Prisma CLI to run migrations in production
-RUN pnpm add prisma@5
+
 
 # Start the application
 CMD ["pnpm", "run", "start:prod"]
