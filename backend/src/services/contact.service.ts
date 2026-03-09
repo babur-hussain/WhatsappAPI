@@ -193,6 +193,7 @@ export class ContactService {
             skip_empty_lines: skipEmptyLines,
             trim: true,
             relax_column_count: true,
+            relax_quotes: true,
         });
 
         return records.map((record) => this.normalizeRow(record, mapping));
@@ -283,6 +284,7 @@ export class ContactService {
                 skip_empty_lines: true,
                 trim: true,
                 relax_column_count: true,
+                relax_quotes: true,
                 to_line: 6
             });
         } else if (ext === 'xlsx' || ext === 'xls') {
