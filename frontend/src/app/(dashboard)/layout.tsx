@@ -17,6 +17,7 @@ export default function DashboardLayout({
                     <Link href="/conversations" className="block px-3 py-2 rounded-lg hover:bg-slate-800 cursor-pointer">Conversations</Link>
                     <Link href="/smart-replies" className="block px-3 py-2 rounded-lg hover:bg-slate-800 cursor-pointer text-indigo-400 font-semibold">Smart Replies</Link>
                     <Link href="/leads" className="block px-3 py-2 rounded-lg hover:bg-slate-800 cursor-pointer">Leads</Link>
+                    <Link href="/contacts" className="block px-3 py-2 rounded-lg hover:bg-slate-800 cursor-pointer text-emerald-400 font-semibold">Contacts</Link>
                     <Link href="/broadcasts" className="block px-3 py-2 rounded-lg hover:bg-slate-800 cursor-pointer">Broadcasts</Link>
                     <Link href="/orders" className="block px-3 py-2 rounded-lg hover:bg-slate-800 cursor-pointer">Orders</Link>
                     <Link href="/analytics" className="block px-3 py-2 rounded-lg hover:bg-slate-800 cursor-pointer">Analytics</Link>

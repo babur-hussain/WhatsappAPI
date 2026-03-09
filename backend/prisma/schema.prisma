@@ -89,6 +89,18 @@ enum RecipientStatus {
   FAILED
 }
 
+enum ContactSource {
+  MANUAL
+  CSV_IMPORT
+  EXCEL_IMPORT
+}
+
+enum ImportStatus {
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
 enum OrderStatus {
   PENDING
   CONFIRMED
@@ -151,6 +163,9 @@ model Factory {
   followUps      FollowUp[]
   broadcasts     Broadcast[]
   orders         Order[]
+  contacts       Contact[]
+  contactLists   ContactList[]
+  importJobs     ImportJob[]
 }
 
 model User {
@@ -331,8 +346,10 @@ model BroadcastRecipient {
   id          String          @id @default(uuid())
   broadcastId String
   broadcast   Broadcast       @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
-  leadId      String
-  lead        Lead            @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  leadId      String?
+  lead        Lead?           @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  contactId   String?
+  contact     Contact?        @relation(fields: [contactId], references: [id], onDelete: SetNull)
   phoneNumber String
   status      RecipientStatus @default(PENDING)
   sentAt      DateTime?
@@ -342,6 +359,7 @@ model BroadcastRecipient {
 
   @@index([broadcastId])
   @@index([leadId])
+  @@index([contactId])
   @@index([status])
 }
 
@@ -367,4 +385,70 @@ model Order {
   @@index([factoryId])
   @@index([createdAt])
   @@index([orderStatus])
+}
+
+model Contact {
+  id           String              @id @default(uuid())
+  factoryId    String
+  factory      Factory             @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  phone        String              @db.Text // AES-256-GCM encrypted
+  phoneHash    String              // SHA-256 hash for dedup/lookup
+  name         String?
+  email        String?
+  company      String?
+  tags         Json?               // JSON array of string tags
+  customFields Json?               // Arbitrary key-value pairs from CSV columns
+  source       ContactSource       @default(MANUAL)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  listMembers  ContactListMember[]
+  broadcastRecipients BroadcastRecipient[]
+
+  @@unique([factoryId, phoneHash])
+  @@index([factoryId])
+  @@index([phoneHash])
+}
+
+model ContactList {
+  id           String              @id @default(uuid())
+  factoryId    String
+  factory      Factory             @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  name         String
+  description  String?
+  contactCount Int                 @default(0)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  members      ContactListMember[]
+
+  @@index([factoryId])
+}
+
+model ContactListMember {
+  id            String      @id @default(uuid())
+  contactListId String
+  contactList   ContactList @relation(fields: [contactListId], references: [id], onDelete: Cascade)
+  contactId     String
+  contact       Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+
+  @@unique([contactListId, contactId])
+  @@index([contactListId])
+  @@index([contactId])
+}
+
+model ImportJob {
+  id            String       @id @default(uuid())
+  factoryId     String
+  factory       Factory      @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  fileName      String
+  totalRows     Int          @default(0)
+  importedCount Int          @default(0)
+  skippedCount  Int          @default(0)
+  failedCount   Int          @default(0)
+  status        ImportStatus @default(PROCESSING)
+  errors        Json?        // Array of error details
+  createdAt     DateTime     @default(now())
+
+  @@index([factoryId])
+  @@index([status])
 }

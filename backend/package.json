@@ -12,10 +12,11 @@
         "@aws-sdk/client-s3": "^3.999.0",
         "@aws-sdk/s3-request-presigner": "^3.1004.0",
         "@loomiflow/shared": "workspace:*",
-        "@prisma/client": "^5.9.0",
+        "@prisma/client": "^5.22.0",
         "bcryptjs": "^3.0.3",
         "bullmq": "^5.70.1",
         "cors": "^2.8.5",
+        "csv-parse": "^6.1.0",
         "dotenv": "^16.4.1",
         "express": "^4.18.2",
         "express-rate-limit": "^8.2.1",
@@ -25,13 +26,13 @@
         "jsonwebtoken": "^9.0.3",
         "multer": "^2.0.2",
         "openai": "^6.25.0",
-        "prisma": "^5.9.0",
         "rate-limit-redis": "^4.3.1",
         "razorpay": "^2.9.6",
         "redis": "^5.11.0",
         "socket.io": "^4.8.3",
         "uuid": "^13.0.0",
         "winston": "^3.19.0",
+        "xlsx": "^0.18.5",
         "zod": "^3.22.4"
     },
     "devDependencies": {
@@ -43,6 +44,7 @@
         "@types/multer": "^2.0.0",
         "@types/socket.io": "^3.0.2",
         "@types/uuid": "^11.0.0",
+        "prisma": "^5.22.0",
         "ts-node-dev": "^2.0.0",
         "typescript": "^5.3.3"
     }

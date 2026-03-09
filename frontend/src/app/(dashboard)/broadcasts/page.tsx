@@ -11,7 +11,11 @@ import {
     CheckCircle2,
     XCircle,
     Clock,
-    Send
+    Send,
+    Upload,
+    FileSpreadsheet,
+    List,
+    AlertCircle,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -29,12 +33,22 @@ interface Broadcast {
     createdAt: string;
 }
 
+interface ContactListItem {
+    id: string;
+    name: string;
+    contactCount: number;
+    _count?: { members: number };
+}
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 const API_BASE = 'https://whatsappapi.lfvs.in/api/v1/broadcasts';
+const CONTACTS_API = 'https://whatsappapi.lfvs.in/api/v1/contacts';
 const HEADERS = {
     'Authorization': 'Bearer test',
     'Content-Type': 'application/json',
 };
+
+type BroadcastMode = 'leads' | 'contacts' | 'file';
 
 const TARGET_TYPES = [
     { value: 'ALL_LEADS', label: 'All Past Leads', desc: 'Send to everyone in your leads database' },
@@ -55,6 +69,16 @@ export default function BroadcastsPage() {
     const [mediaUrl, setMediaUrl] = useState('');
     const [errorMsg, setErrorMsg] = useState('');
 
+    // Enhanced: broadcast mode
+    const [broadcastMode, setBroadcastMode] = useState<BroadcastMode>('leads');
+
+    // Contact list selection
+    const [contactLists, setContactLists] = useState<ContactListItem[]>([]);
+    const [selectedListId, setSelectedListId] = useState('');
+
+    // File upload
+    const [uploadFile, setUploadFile] = useState<File | null>(null);
+
     const fetchBroadcasts = async () => {
         try {
             const res = await fetch(API_BASE, { headers: HEADERS });
@@ -69,14 +93,24 @@ export default function BroadcastsPage() {
         }
     };
 
+    const fetchContactLists = async () => {
+        try {
+            const res = await fetch(`${CONTACTS_API}/lists`, { headers: HEADERS });
+            if (res.ok) {
+                const data = await res.json();
+                setContactLists(data.data || []);
+            }
+        } catch { }
+    };
+
     useEffect(() => {
         fetchBroadcasts();
+        fetchContactLists();
 
-        // Polling to update progress if there are broadcasts 'SENDING'
         const interval = setInterval(() => {
             setBroadcasts(current => {
                 if (current.some(b => b.status === 'SENDING')) {
-                    fetchBroadcasts(); // Silently refetch to get updated progress
+                    fetchBroadcasts();
                 }
                 return current;
             });
@@ -91,24 +125,62 @@ export default function BroadcastsPage() {
         setFormSaving(true);
 
         try {
-            const res = await fetch(API_BASE, {
-                method: 'POST',
-                headers: HEADERS,
-                body: JSON.stringify({
-                    title,
-                    message,
-                    targetType,
-                    mediaUrl: mediaUrl || undefined
-                }),
-            });
+            let res;
+
+            if (broadcastMode === 'leads') {
+                res = await fetch(API_BASE, {
+                    method: 'POST',
+                    headers: HEADERS,
+                    body: JSON.stringify({
+                        title,
+                        message,
+                        targetType,
+                        mediaUrl: mediaUrl || undefined,
+                    }),
+                });
+            } else if (broadcastMode === 'contacts') {
+                if (!selectedListId) {
+                    setErrorMsg('Please select a contact list');
+                    setFormSaving(false);
+                    return;
+                }
+                res = await fetch(`${API_BASE}/from-contacts`, {
+                    method: 'POST',
+                    headers: HEADERS,
+                    body: JSON.stringify({
+                        title,
+                        message,
+                        contactListId: selectedListId,
+                        mediaUrl: mediaUrl || undefined,
+                    }),
+                });
+            } else {
+                // file mode
+                if (!uploadFile) {
+                    setErrorMsg('Please select a CSV or Excel file');
+                    setFormSaving(false);
+                    return;
+                }
+                const formData = new FormData();
+                formData.append('file', uploadFile);
+                formData.append('title', title);
+                formData.append('message', message);
+                if (mediaUrl) formData.append('mediaUrl', mediaUrl);
+
+                res = await fetch(`${API_BASE}/from-file`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer test' },
+                    body: formData,
+                });
+            }
 
             const data = await res.json();
 
             if (res.ok) {
                 setIsCreating(false);
-                setTitle('');
-                setMessage('');
-                setMediaUrl('');
+                setTitle(''); setMessage(''); setMediaUrl('');
+                setSelectedListId(''); setUploadFile(null);
+                setBroadcastMode('leads');
                 fetchBroadcasts();
             } else {
                 setErrorMsg(data.message || 'Failed to create broadcast.');
@@ -117,6 +189,14 @@ export default function BroadcastsPage() {
             setErrorMsg('An unexpected error occurred.');
         } finally {
             setFormSaving(false);
+        }
+    };
+
+    const targetTypeLabel = (type: string) => {
+        switch (type) {
+            case 'CONTACT_LIST': return 'Contact List';
+            case 'CSV_UPLOAD': return 'CSV/Excel';
+            default: return TARGET_TYPES.find(t => t.value === type)?.label || type;
         }
     };
 
@@ -130,11 +210,11 @@ export default function BroadcastsPage() {
                         Broadcasts
                     </h1>
                     <p className="text-slate-500 mt-1">
-                        Send bulk WhatsApp messages to your leads safely and efficiently.
+                        Send bulk WhatsApp messages to your leads, contact lists, or uploaded files.
                     </p>
                 </div>
                 <button
-                    onClick={() => setIsCreating(true)}
+                    onClick={() => { setIsCreating(true); setErrorMsg(''); }}
                     className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
                 >
                     <Plus className="w-5 h-5" />
@@ -180,6 +260,9 @@ export default function BroadcastsPage() {
                                             <CheckCircle2 className="w-3 h-3 mr-1" /> COMPLETED
                                         </span>
                                     )}
+                                    <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">
+                                        {targetTypeLabel(b.targetType)}
+                                    </span>
                                 </div>
                                 <p className="text-slate-500 text-sm line-clamp-1 mb-3">{b.message}</p>
                                 <div className="flex items-center space-x-6 text-sm text-slate-500">
@@ -212,7 +295,7 @@ export default function BroadcastsPage() {
             {/* Create Broadcast Modal */}
             {isCreating && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-                    <form onSubmit={handleCreate} className="bg-white rounded-2xl w-full max-w-2xl shadow-xl flex flex-col max-h-full">
+                    <form onSubmit={handleCreate} className="bg-white rounded-2xl w-full max-w-2xl shadow-xl flex flex-col max-h-[90vh]">
                         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
                             <h2 className="text-xl font-bold text-slate-900 flex items-center">
                                 <Send className="w-5 h-5 mr-2 text-indigo-600" />
@@ -225,8 +308,8 @@ export default function BroadcastsPage() {
 
                         <div className="px-6 py-6 overflow-y-auto space-y-6">
                             {errorMsg && (
-                                <div className="p-4 bg-red-50 text-red-700 rounded-xl text-sm border border-red-200">
-                                    {errorMsg}
+                                <div className="p-4 bg-red-50 text-red-700 rounded-xl text-sm border border-red-200 flex items-center gap-2">
+                                    <AlertCircle className="w-4 h-4 shrink-0" /> {errorMsg}
                                 </div>
                             )}
 
@@ -242,29 +325,139 @@ export default function BroadcastsPage() {
                                 />
                             </div>
 
+                            {/* ─── Broadcast Source Mode ─── */}
                             <div>
-                                <label className="block text-sm font-semibold text-slate-900 mb-2">Target Audience</label>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                    {TARGET_TYPES.map(tt => (
+                                <label className="block text-sm font-semibold text-slate-900 mb-2">Recipient Source</label>
+                                <div className="grid grid-cols-3 gap-3">
+                                    {([
+                                        { key: 'leads', label: 'From Leads', desc: 'Target leads by status', icon: Users },
+                                        { key: 'contacts', label: 'Contact List', desc: 'Select a saved list', icon: List },
+                                        { key: 'file', label: 'Upload File', desc: 'CSV or Excel file', icon: FileSpreadsheet },
+                                    ] as const).map(mode => (
                                         <button
-                                            key={tt.value}
+                                            key={mode.key}
                                             type="button"
-                                            onClick={() => setTargetType(tt.value)}
-                                            className={`p-4 rounded-xl border text-left transition ${targetType === tt.value
-                                                    ? 'border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600'
-                                                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                                            onClick={() => setBroadcastMode(mode.key)}
+                                            className={`p-4 rounded-xl border text-left transition ${broadcastMode === mode.key
+                                                ? 'border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600'
+                                                : 'border-slate-200 hover:border-slate-300 bg-white'
                                                 }`}
                                         >
-                                            <h4 className={`font-bold text-sm mb-1 ${targetType === tt.value ? 'text-indigo-900' : 'text-slate-900'}`}>
-                                                {tt.label}
+                                            <mode.icon className={`w-5 h-5 mb-2 ${broadcastMode === mode.key ? 'text-indigo-600' : 'text-slate-400'}`} />
+                                            <h4 className={`font-bold text-sm mb-0.5 ${broadcastMode === mode.key ? 'text-indigo-900' : 'text-slate-900'}`}>
+                                                {mode.label}
                                             </h4>
-                                            <p className={`text-xs ${targetType === tt.value ? 'text-indigo-700' : 'text-slate-500'}`}>
-                                                {tt.desc}
+                                            <p className={`text-xs ${broadcastMode === mode.key ? 'text-indigo-700' : 'text-slate-500'}`}>
+                                                {mode.desc}
                                             </p>
                                         </button>
                                     ))}
                                 </div>
                             </div>
+
+                            {/* ─── Leads Mode: Target Audience ─── */}
+                            {broadcastMode === 'leads' && (
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-900 mb-2">Target Audience</label>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                        {TARGET_TYPES.map(tt => (
+                                            <button
+                                                key={tt.value}
+                                                type="button"
+                                                onClick={() => setTargetType(tt.value)}
+                                                className={`p-4 rounded-xl border text-left transition ${targetType === tt.value
+                                                    ? 'border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600'
+                                                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                                                    }`}
+                                            >
+                                                <h4 className={`font-bold text-sm mb-1 ${targetType === tt.value ? 'text-indigo-900' : 'text-slate-900'}`}>
+                                                    {tt.label}
+                                                </h4>
+                                                <p className={`text-xs ${targetType === tt.value ? 'text-indigo-700' : 'text-slate-500'}`}>
+                                                    {tt.desc}
+                                                </p>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ─── Contacts Mode: Select List ─── */}
+                            {broadcastMode === 'contacts' && (
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-900 mb-2">Select Contact List</label>
+                                    {contactLists.length === 0 ? (
+                                        <div className="p-4 bg-amber-50 text-amber-800 rounded-xl text-sm border border-amber-200">
+                                            No contact lists found. Go to Contacts → Contact Lists to create one first.
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                                            {contactLists.map(list => (
+                                                <button
+                                                    key={list.id}
+                                                    type="button"
+                                                    onClick={() => setSelectedListId(list.id)}
+                                                    className={`w-full p-3 rounded-xl border text-left transition flex items-center justify-between ${selectedListId === list.id
+                                                        ? 'border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600'
+                                                        : 'border-slate-200 hover:border-slate-300 bg-white'
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <List className={`w-4 h-4 ${selectedListId === list.id ? 'text-indigo-600' : 'text-slate-400'}`} />
+                                                        <span className={`font-semibold text-sm ${selectedListId === list.id ? 'text-indigo-900' : 'text-slate-900'}`}>{list.name}</span>
+                                                    </div>
+                                                    <span className="text-xs text-slate-500">{list._count?.members ?? list.contactCount} contacts</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* ─── File Mode: Upload ─── */}
+                            {broadcastMode === 'file' && (
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-900 mb-2">Upload CSV / Excel File</label>
+                                    <div
+                                        className={`border-2 border-dashed rounded-2xl p-6 text-center transition cursor-pointer ${uploadFile ? 'border-indigo-400 bg-indigo-50/50' : 'border-slate-300 hover:border-indigo-400 hover:bg-slate-50'
+                                            }`}
+                                        onClick={() => document.getElementById('broadcast-file-input')?.click()}
+                                        onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
+                                        onDrop={e => {
+                                            e.preventDefault(); e.stopPropagation();
+                                            const file = e.dataTransfer.files[0];
+                                            if (file) setUploadFile(file);
+                                        }}
+                                    >
+                                        <input
+                                            id="broadcast-file-input"
+                                            type="file"
+                                            accept=".csv,.xlsx,.xls"
+                                            className="hidden"
+                                            onChange={e => e.target.files?.[0] && setUploadFile(e.target.files[0])}
+                                        />
+                                        {uploadFile ? (
+                                            <div className="flex items-center justify-center gap-3">
+                                                <FileSpreadsheet className="w-6 h-6 text-indigo-600" />
+                                                <div className="text-left">
+                                                    <p className="font-semibold text-sm text-slate-900">{uploadFile.name}</p>
+                                                    <p className="text-xs text-slate-500">{(uploadFile.size / 1024).toFixed(1)} KB</p>
+                                                </div>
+                                                <button type="button" onClick={e => { e.stopPropagation(); setUploadFile(null); }}
+                                                    className="p-1 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500">
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                                                <p className="font-semibold text-sm text-slate-700">Drop file or click to browse</p>
+                                                <p className="text-xs text-slate-400 mt-1">CSV, Excel · Must have a &quot;phone&quot; column</p>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
 
                             <div>
                                 <label className="block text-sm font-semibold text-slate-900 mb-2">Message</label>
@@ -273,11 +466,13 @@ export default function BroadcastsPage() {
                                     rows={5}
                                     value={message}
                                     onChange={e => setMessage(e.target.value)}
-                                    placeholder="Type your broadcast message here..."
+                                    placeholder="Type your broadcast message here... Use {{name}}, {{phone}}, {{company}} as placeholders"
                                     className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition resize-none"
                                 />
                                 <div className="flex justify-between items-center mt-2">
-                                    <p className="text-xs text-slate-500">Variables available: none yet.</p>
+                                    <p className="text-xs text-slate-500">
+                                        Placeholders: {'{{name}}'}, {'{{phone}}'}, {'{{email}}'}, {'{{company}}'}, or any CSV column name
+                                    </p>
                                     <p className="text-xs font-semibold text-slate-400">{message.length}/1000</p>
                                 </div>
                             </div>

@@ -58,3 +58,14 @@ export const decrypt = (encryptedText: string): string => {
         throw new Error('Decryption failed');
     }
 };
+
+/**
+ * Creates a deterministic SHA-256 hash of a phone number for dedup/lookup.
+ * Normalizes by stripping all non-digit characters before hashing.
+ * @param phone The raw phone number string
+ * @returns Hex-encoded SHA-256 hash
+ */
+export const hashPhone = (phone: string): string => {
+    const normalized = phone.replace(/\D/g, '');
+    return crypto.createHash('sha256').update(normalized).digest('hex');
+};

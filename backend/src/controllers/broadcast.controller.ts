@@ -22,6 +22,52 @@ export const createBroadcast = catchAsync(async (req: AuthRequest, res: Response
     }
 });
 
+export const createBroadcastFromContacts = catchAsync(async (req: AuthRequest, res: Response) => {
+    const factoryId = req.user?.factoryId;
+    if (!factoryId) return res.status(401).json(errorResponse('Unauthorized', 'UNAUTHORIZED'));
+
+    const { title, message, mediaUrl, contactListId } = req.body;
+
+    if (!title || !message || !contactListId) {
+        return res.status(400).json(errorResponse('title, message, and contactListId are required'));
+    }
+
+    try {
+        const broadcast = await broadcastService.createBroadcastFromContactList(factoryId, {
+            title, message, mediaUrl, contactListId,
+        });
+        res.status(201).json(successResponse(broadcast));
+    } catch (error) {
+        res.status(400).json(errorResponse((error as Error).message));
+    }
+});
+
+export const createBroadcastFromFile = catchAsync(async (req: AuthRequest, res: Response) => {
+    const factoryId = req.user?.factoryId;
+    if (!factoryId) return res.status(401).json(errorResponse('Unauthorized', 'UNAUTHORIZED'));
+
+    const file = (req as any).file;
+    if (!file) return res.status(400).json(errorResponse('File is required'));
+
+    const { title, message, mediaUrl } = req.body;
+
+    if (!title || !message) {
+        return res.status(400).json(errorResponse('title and message are required'));
+    }
+
+    try {
+        const broadcast = await broadcastService.createBroadcastFromFile(
+            factoryId,
+            { title, message, mediaUrl },
+            file.buffer,
+            file.originalname || 'upload.csv',
+        );
+        res.status(201).json(successResponse(broadcast));
+    } catch (error) {
+        res.status(400).json(errorResponse((error as Error).message));
+    }
+});
+
 export const getBroadcasts = catchAsync(async (req: AuthRequest, res: Response) => {
     const factoryId = req.user?.factoryId;
     if (!factoryId) return res.status(401).json(errorResponse('Unauthorized', 'UNAUTHORIZED'));
