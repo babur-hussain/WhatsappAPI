@@ -43,10 +43,13 @@ interface ContactListItem {
 // ─── Constants ───────────────────────────────────────────────────────────────
 const API_BASE = 'https://whatsappapi.lfvs.in/api/v1/broadcasts';
 const CONTACTS_API = 'https://whatsappapi.lfvs.in/api/v1/contacts';
-const getHeaders = () => ({
-    'Authorization': `Bearer ${document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1] || ''}`,
-    'Content-Type': 'application/json',
-});
+const getHeaders = () => {
+    const token = typeof document !== 'undefined' ? document.cookie.match(/(?:^|;\s*)accessToken=([^;]+)/)?.[1] || '' : '';
+    return {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+    };
+};
 
 type BroadcastMode = 'leads' | 'contacts' | 'file';
 
