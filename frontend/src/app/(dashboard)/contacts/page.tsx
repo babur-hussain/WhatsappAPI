@@ -74,10 +74,10 @@ interface PaginationData {
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const API_BASE = 'https://whatsappapi.lfvs.in/api/v1/contacts';
-const HEADERS = {
-    'Authorization': 'Bearer test',
+const getHeaders = () => ({
+    'Authorization': `Bearer ${document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1] || ''}`,
     'Content-Type': 'application/json',
-};
+});
 
 type ViewMode = 'contacts' | 'lists' | 'imports';
 
@@ -132,7 +132,7 @@ export default function ContactsPage() {
             });
             if (searchQuery) params.set('search', searchQuery);
 
-            const res = await fetch(`${API_BASE}?${params}`, { headers: HEADERS });
+            const res = await fetch(`${API_BASE}?${params}`, { headers: getHeaders() });
             if (res.ok) {
                 const data = await res.json();
                 setContacts(data.data?.contacts || []);
@@ -147,7 +147,7 @@ export default function ContactsPage() {
 
     const fetchContactCount = async () => {
         try {
-            const res = await fetch(`${API_BASE}/count`, { headers: HEADERS });
+            const res = await fetch(`${API_BASE}/count`, { headers: getHeaders() });
             if (res.ok) {
                 const data = await res.json();
                 setTotalContacts(data.data?.count || 0);
@@ -157,7 +157,7 @@ export default function ContactsPage() {
 
     const fetchContactLists = async () => {
         try {
-            const res = await fetch(`${API_BASE}/lists`, { headers: HEADERS });
+            const res = await fetch(`${API_BASE}/lists`, { headers: getHeaders() });
             if (res.ok) {
                 const data = await res.json();
                 setContactLists(data.data || []);
@@ -167,7 +167,7 @@ export default function ContactsPage() {
 
     const fetchImportHistory = async () => {
         try {
-            const res = await fetch(`${API_BASE}/import/history`, { headers: HEADERS });
+            const res = await fetch(`${API_BASE}/import/history`, { headers: getHeaders() });
             if (res.ok) {
                 const data = await res.json();
                 setImportHistory(data.data || []);
@@ -197,7 +197,7 @@ export default function ContactsPage() {
         try {
             const res = await fetch(API_BASE, {
                 method: 'POST',
-                headers: HEADERS,
+                headers: getHeaders(),
                 body: JSON.stringify({
                     phone: formPhone,
                     name: formName || undefined,
@@ -231,7 +231,7 @@ export default function ContactsPage() {
         try {
             const res = await fetch(`${API_BASE}/${editingContact.id}`, {
                 method: 'PUT',
-                headers: HEADERS,
+                headers: getHeaders(),
                 body: JSON.stringify({
                     phone: formPhone,
                     name: formName || undefined,
@@ -262,7 +262,7 @@ export default function ContactsPage() {
         try {
             const res = await fetch(`${API_BASE}/bulk-delete`, {
                 method: 'POST',
-                headers: HEADERS,
+                headers: getHeaders(),
                 body: JSON.stringify({ contactIds: Array.from(selectedContacts) }),
             });
 
@@ -286,7 +286,7 @@ export default function ContactsPage() {
 
             const res = await fetch(`${API_BASE}/import`, {
                 method: 'POST',
-                headers: { 'Authorization': 'Bearer test' },
+                headers: { 'Authorization': getHeaders().Authorization },
                 body: formData,
             });
 
@@ -316,7 +316,7 @@ export default function ContactsPage() {
             const contactIds = selectedContacts.size > 0 ? Array.from(selectedContacts) : undefined;
             const res = await fetch(`${API_BASE}/lists`, {
                 method: 'POST',
-                headers: HEADERS,
+                headers: getHeaders(),
                 body: JSON.stringify({
                     name: listName,
                     description: listDesc || undefined,
@@ -345,7 +345,7 @@ export default function ContactsPage() {
         try {
             await fetch(`${API_BASE}/lists/${listId}`, {
                 method: 'DELETE',
-                headers: HEADERS,
+                headers: getHeaders(),
             });
             fetchContactLists();
         } catch { }

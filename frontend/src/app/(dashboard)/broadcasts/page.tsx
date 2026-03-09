@@ -43,10 +43,10 @@ interface ContactListItem {
 // ─── Constants ───────────────────────────────────────────────────────────────
 const API_BASE = 'https://whatsappapi.lfvs.in/api/v1/broadcasts';
 const CONTACTS_API = 'https://whatsappapi.lfvs.in/api/v1/contacts';
-const HEADERS = {
-    'Authorization': 'Bearer test',
+const getHeaders = () => ({
+    'Authorization': `Bearer ${document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1] || ''}`,
     'Content-Type': 'application/json',
-};
+});
 
 type BroadcastMode = 'leads' | 'contacts' | 'file';
 
@@ -81,7 +81,7 @@ export default function BroadcastsPage() {
 
     const fetchBroadcasts = async () => {
         try {
-            const res = await fetch(API_BASE, { headers: HEADERS });
+            const res = await fetch(API_BASE, { headers: getHeaders() });
             if (res.ok) {
                 const data = await res.json();
                 setBroadcasts(data.data || []);
@@ -95,7 +95,7 @@ export default function BroadcastsPage() {
 
     const fetchContactLists = async () => {
         try {
-            const res = await fetch(`${CONTACTS_API}/lists`, { headers: HEADERS });
+            const res = await fetch(`${CONTACTS_API}/lists`, { headers: getHeaders() });
             if (res.ok) {
                 const data = await res.json();
                 setContactLists(data.data || []);
@@ -130,7 +130,7 @@ export default function BroadcastsPage() {
             if (broadcastMode === 'leads') {
                 res = await fetch(API_BASE, {
                     method: 'POST',
-                    headers: HEADERS,
+                    headers: getHeaders(),
                     body: JSON.stringify({
                         title,
                         message,
@@ -146,7 +146,7 @@ export default function BroadcastsPage() {
                 }
                 res = await fetch(`${API_BASE}/from-contacts`, {
                     method: 'POST',
-                    headers: HEADERS,
+                    headers: getHeaders(),
                     body: JSON.stringify({
                         title,
                         message,
@@ -169,7 +169,7 @@ export default function BroadcastsPage() {
 
                 res = await fetch(`${API_BASE}/from-file`, {
                     method: 'POST',
-                    headers: { 'Authorization': 'Bearer test' },
+                    headers: { 'Authorization': getHeaders().Authorization },
                     body: formData,
                 });
             }
