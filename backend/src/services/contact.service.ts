@@ -95,6 +95,11 @@ export class ContactService {
         fileName: string,
         skipEmptyRows: boolean = true
     ) {
+        // Pre-filter completely empty rows to avoid inflating "skipped" counts with Excel blank trails
+        if (skipEmptyRows) {
+            rows = rows.filter(row => Object.values(row).some(val => val && String(val).trim() !== ''));
+        }
+
         // Create import job
         const importJob = await prisma.importJob.create({
             data: {
@@ -113,14 +118,6 @@ export class ContactService {
         for (let i = 0; i < rows.length; i++) {
             const row = rows[i];
             try {
-                if (skipEmptyRows) {
-                    const hasData = Object.values(row).some(val => val && String(val).trim() !== '');
-                    if (!hasData) {
-                        skippedCount++;
-                        continue;
-                    }
-                }
-
                 if (!row.phone) {
                     skippedCount++;
                     errors.push({ row: i + 1, error: 'Missing phone number' });

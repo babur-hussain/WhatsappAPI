@@ -61,6 +61,7 @@ interface ImportJob {
     skippedCount: number;
     failedCount: number;
     status: 'PROCESSING' | 'COMPLETED' | 'FAILED';
+    errors?: string;
     createdAt: string;
 }
 
@@ -838,6 +839,29 @@ export default function ContactsPage() {
                                             <p className="text-xs text-red-600">Failed</p>
                                         </div>
                                     </div>
+                                    
+                                    {importResult.errors && (() => {
+                                        let parsedErrors = [];
+                                        try { parsedErrors = typeof importResult.errors === 'string' ? JSON.parse(importResult.errors) : importResult.errors; } catch (e) { }
+                                        if (parsedErrors.length > 0) {
+                                            return (
+                                                <div className="mt-4 max-h-48 overflow-y-auto bg-slate-50 border border-slate-200 rounded-xl p-4 text-left">
+                                                    <p className="text-xs font-semibold text-slate-700 mb-2">Skip / Error Reasons:</p>
+                                                    <ul className="text-xs text-slate-600 space-y-1.5 font-mono">
+                                                        {parsedErrors.map((err: any, idx: number) => (
+                                                            <li key={idx} className="flex gap-2">
+                                                                <span className="font-bold text-slate-400 shrink-0">Row {err.row}:</span>
+                                                                <span className="text-red-500">{err.error}</span>
+                                                                {err.phone && <span className="text-slate-500">"{err.phone}"</span>}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )
+                                        }
+                                        return null;
+                                    })()}
+
                                     <button onClick={resetImportModal}
                                         className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
                                     >
