@@ -916,6 +916,37 @@ export default function ContactsPage() {
                                                 </p>
                                             </div>
 
+                                            {/* Data Preview Table */}
+                                            {previewRows.length > 0 && (
+                                                <div className="mb-4 text-left border border-slate-200 rounded-xl overflow-hidden">
+                                                    <div className="bg-slate-50 px-3 py-2 border-b border-slate-200">
+                                                        <p className="text-xs font-semibold text-slate-700">File Preview (First 5 rows)</p>
+                                                    </div>
+                                                    <div className="overflow-x-auto max-h-48">
+                                                        <table className="w-full text-xs text-left whitespace-nowrap">
+                                                            <thead className="text-slate-500 bg-slate-50/50 sticky top-0">
+                                                                <tr>
+                                                                    {previewHeaders.map(header => (
+                                                                        <th key={header} className="px-3 py-2 font-semibold border-b border-slate-100">{header}</th>
+                                                                    ))}
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-slate-100">
+                                                                {previewRows.map((row, idx) => (
+                                                                    <tr key={idx} className="hover:bg-slate-50">
+                                                                        {previewHeaders.map(header => (
+                                                                            <td key={header} className="px-3 py-2 text-slate-600">
+                                                                                {String(row[header] || '')}
+                                                                            </td>
+                                                                        ))}
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             <div className="grid grid-cols-2 gap-4">
                                                 {[
                                                     { id: 'phone', label: 'Phone Number *', required: true },
