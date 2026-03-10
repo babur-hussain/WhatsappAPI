@@ -130,7 +130,7 @@ export default function OrdersPage() {
     };
 
     return (
-        <div className="p-8 h-[calc(100vh-4rem)] overflow-y-auto bg-slate-50 relative space-y-8">
+        <div className="p-4 md:p-8 h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] overflow-y-auto bg-slate-50 relative space-y-6 md:space-y-8">
             {/* Header */}
             <div>
                 <h1 className="text-3xl font-bold tracking-tight text-slate-900 flex items-center">
@@ -143,7 +143,7 @@ export default function OrdersPage() {
             </div>
 
             {/* Analytics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center">
                     <div className="flex items-center text-slate-500 mb-2">
                         <TrendingUp className="w-4 h-4 mr-2 text-indigo-500" />

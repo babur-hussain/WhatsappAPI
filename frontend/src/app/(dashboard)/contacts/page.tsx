@@ -483,11 +483,11 @@ export default function ContactsPage() {
     // ─── Render ──────────────────────────────────────────────────────────────
 
     return (
-        <div className="p-8 h-[calc(100vh-4rem)] overflow-y-auto bg-slate-50 relative">
+        <div className="p-4 md:p-8 h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] overflow-y-auto bg-slate-50 relative">
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-slate-900 flex items-center">
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900 flex items-center">
                         <Users className="w-8 h-8 mr-3 text-indigo-600" />
                         Contacts
                     </h1>
@@ -495,7 +495,7 @@ export default function ContactsPage() {
                         {totalContacts.toLocaleString()} contacts · {contactLists.length} lists
                     </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                     <button
                         onClick={() => setShowImportModal(true)}
                         className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold hover:bg-slate-50 transition"
@@ -518,7 +518,7 @@ export default function ContactsPage() {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-1 bg-white rounded-xl border border-slate-200 p-1 mb-6 w-fit">
+            <div className="flex gap-1 bg-white rounded-xl border border-slate-200 p-1 mb-6 w-full sm:w-fit overflow-x-auto">
                 {([
                     { key: 'contacts', label: 'All Contacts', icon: Users },
                     { key: 'lists', label: 'Contact Lists', icon: List },
@@ -541,7 +541,7 @@ export default function ContactsPage() {
             {viewMode === 'contacts' && (
                 <>
                     {/* Search & Actions Bar */}
-                    <div className="flex items-center justify-between mb-4 gap-4">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between mb-4 gap-3 sm:gap-4">
                         <div className="relative flex-1 max-w-md">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <input
@@ -597,7 +597,7 @@ export default function ContactsPage() {
                         </div>
                     ) : (
                         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                            <table className="w-full text-left">
+                            <div className="overflow-x-auto"><table className="w-full text-left min-w-[700px]">
                                 <thead className="bg-slate-50 border-b border-slate-200">
                                     <tr>
                                         <th className="px-4 py-3 w-10">
@@ -660,7 +660,7 @@ export default function ContactsPage() {
                                         </tr>
                                     ))}
                                 </tbody>
-                            </table>
+                            </table></div>
 
                             {/* Pagination */}
                             {pagination.totalPages > 1 && (
@@ -775,7 +775,7 @@ export default function ContactsPage() {
                                         {format(new Date(job.createdAt), 'MMM d, yyyy h:mm a')}
                                     </span>
                                 </div>
-                                <div className="grid grid-cols-4 gap-4 text-center">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 text-center">
                                     <div className="bg-slate-50 rounded-xl p-3">
                                         <p className="text-xl font-bold text-slate-900">{job.totalRows}</p>
                                         <p className="text-xs text-slate-500 font-medium">Total Rows</p>

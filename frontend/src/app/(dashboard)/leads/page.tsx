@@ -193,17 +193,17 @@ export default function LeadsPage() {
     };
 
     return (
-        <div className="flex h-[calc(100vh-4rem)] bg-slate-50/50">
+        <div className="flex h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] bg-slate-50/50">
             {/* Main Content */}
-            <div className={`flex-1 flex flex-col transition-all duration-300 ${selectedLead ? 'pr-[400px]' : ''}`}>
-                <div className="p-8 pb-4 h-full overflow-y-auto">
+            <div className={`flex-1 flex flex-col transition-all duration-300 ${selectedLead ? 'md:pr-[400px]' : ''}`}>
+                <div className="p-4 md:p-8 pb-4 h-full overflow-y-auto">
                     <div className="mb-8">
                         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Lead Intelligence</h1>
                         <p className="text-slate-500 mt-2">Track, manage, and convert your WhatsApp pipeline.</p>
                     </div>
 
                     {/* Stats Header */}
-                    <div className="grid grid-cols-4 gap-4 mb-8">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
                         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                             <p className="text-sm font-medium text-slate-500">Total Leads</p>
                             <h3 className="text-3xl font-bold text-slate-900 mt-2">{stats.total}</h3>
@@ -223,8 +223,8 @@ export default function LeadsPage() {
                     </div>
 
                     {/* Controls */}
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="relative w-72">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
+                        <div className="relative w-full sm:w-72">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <input
                                 type="text"
@@ -250,13 +250,13 @@ export default function LeadsPage() {
                     </div>
 
                     {/* Table */}
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex-1 relative min-h-[400px]">
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex-1 relative min-h-[300px] md:min-h-[400px]">
                         {loading && (
                             <div className="absolute inset-0 bg-white/80 backdrop-blur-[2px] z-10 flex items-center justify-center">
                                 <div className="animate-spin w-8 h-8 border-4 border-indigo-100 border-t-indigo-600 rounded-full" />
                             </div>
                         )}
-                        <table className="w-full text-left text-sm">
+                        <div className="overflow-x-auto"><table className="w-full text-left text-sm min-w-[600px]">
                             <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-medium">
                                 <tr>
                                     <th className="px-6 py-4">Customer</th>
@@ -305,7 +305,7 @@ export default function LeadsPage() {
                                     </tr>
                                 )}
                             </tbody>
-                        </table>
+                        </table></div>
                     </div>
 
                     {/* Pagination */}
@@ -334,7 +334,7 @@ export default function LeadsPage() {
             </div>
 
             {/* Slide-over Detail Panel */}
-            <div className={`fixed inset-y-0 right-0 w-[400px] bg-white border-l border-slate-200 shadow-2xl transform transition-transform duration-300 ease-in-out z-20 flex flex-col ${selectedLead ? 'translate-x-0' : 'translate-x-full'}`}>
+            <div className={`fixed inset-0 md:inset-y-0 md:right-0 md:left-auto w-full md:w-[400px] bg-white border-l border-slate-200 shadow-2xl transform transition-transform duration-300 ease-in-out z-20 flex flex-col ${selectedLead ? 'translate-x-0' : 'translate-x-full'}`}>
                 {selectedLead && (
                     <>
                         <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50/50">

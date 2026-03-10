@@ -285,7 +285,7 @@ export default function ConversationsPage() {
     }
 
     return (
-        <div className="flex h-[calc(100vh-64px)] overflow-hidden">
+        <div className="flex h-[calc(100vh-3.5rem)] md:h-[calc(100vh-64px)] overflow-hidden">
             {/* Conversation List */}
             <div className={`w-full md:w-96 flex-shrink-0 border-r border-gray-200 bg-white flex flex-col ${selectedId ? 'hidden md:flex' : 'flex'}`}>
                 <div className="p-4 border-b border-gray-100">
@@ -401,7 +401,7 @@ export default function ConversationsPage() {
                             ) : (
                                 messages.map((msg) => (
                                     <div key={msg.id} className={`flex ${msg.sender === 'CUSTOMER' ? 'justify-start' : 'justify-end'}`}>
-                                        <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 shadow-sm ${msg.sender === 'CUSTOMER'
+                                        <div className={`max-w-[85%] md:max-w-[75%] rounded-2xl px-4 py-2.5 shadow-sm ${msg.sender === 'CUSTOMER'
                                             ? 'bg-white text-gray-800 rounded-bl-md'
                                             : msg.sender === 'BOT'
                                                 ? 'bg-purple-500 text-white rounded-br-md'

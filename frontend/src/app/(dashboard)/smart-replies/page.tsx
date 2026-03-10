@@ -98,8 +98,8 @@ export default function SmartRepliesPage() {
     }
 
     return (
-        <div className="p-8 max-w-4xl mx-auto space-y-8">
-            <div className="flex justify-between items-center">
+        <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6 md:space-y-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-slate-900">Smart Replies</h1>
                     <p className="text-slate-500 mt-2">Configure how your WhatsApp bots interact with incoming leads.</p>

@@ -204,9 +204,9 @@ export default function BroadcastsPage() {
     };
 
     return (
-        <div className="p-8 h-[calc(100vh-4rem)] overflow-y-auto bg-slate-50 relative">
+        <div className="p-4 md:p-8 h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] overflow-y-auto bg-slate-50 relative">
             {/* Header */}
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 md:mb-8">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-slate-900 flex items-center">
                         <Megaphone className="w-8 h-8 mr-3 text-indigo-600" />
@@ -331,7 +331,7 @@ export default function BroadcastsPage() {
                             {/* ─── Broadcast Source Mode ─── */}
                             <div>
                                 <label className="block text-sm font-semibold text-slate-900 mb-2">Recipient Source</label>
-                                <div className="grid grid-cols-3 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                     {([
                                         { key: 'leads', label: 'From Leads', desc: 'Target leads by status', icon: Users },
                                         { key: 'contacts', label: 'Contact List', desc: 'Select a saved list', icon: List },

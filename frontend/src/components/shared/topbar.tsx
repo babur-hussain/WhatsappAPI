@@ -51,9 +51,9 @@ export function Topbar() {
         : user?.email?.[0]?.toUpperCase() ?? 'A';
 
     return (
-        <div className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 z-10 sticky top-0">
-            <div className="font-semibold text-lg tracking-tight text-slate-800">LoomiFlow</div>
-            <div className="flex items-center space-x-4">
+        <div className="h-14 md:h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 z-10 sticky top-0">
+            <div className="font-semibold text-lg tracking-tight text-slate-800 md:opacity-100">LoomiFlow</div>
+            <div className="flex items-center space-x-3 md:space-x-4">
                 <NotificationBell />
 
                 {/* Profile Dropdown */}
