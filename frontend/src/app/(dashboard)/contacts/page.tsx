@@ -114,6 +114,7 @@ export default function ContactsPage() {
     const [mappingPhase, setMappingPhase] = useState(false);
     const [previewHeaders, setPreviewHeaders] = useState<string[]>([]);
     const [previewRows, setPreviewRows] = useState<any[]>([]);
+    const [totalDetectedRows, setTotalDetectedRows] = useState<number>(0);
     const [fieldMappings, setFieldMappings] = useState({ phone: '', name: '', email: '', company: '' });
     const [skipEmptyRows, setSkipEmptyRows] = useState(true);
 
@@ -315,6 +316,7 @@ export default function ContactsPage() {
             if (res.ok) {
                 setPreviewHeaders(data.data.headers);
                 setPreviewRows(data.data.rows);
+                setTotalDetectedRows(data.data.totalRows || data.data.rows.length);
                 
                 // Auto-map if possible
                 const autoMap = { phone: '', name: '', email: '', company: '' };
@@ -938,6 +940,12 @@ export default function ContactsPage() {
                                                 <p className="text-xs text-indigo-700">
                                                     Match the columns from your file to the correct fields. Phone number is required.
                                                 </p>
+                                            </div>
+
+                                            {/* Total contacts detected */}
+                                            <div className="bg-emerald-50 rounded-xl p-3 border border-emerald-200 flex items-center gap-2">
+                                                <span className="text-2xl font-bold text-emerald-700">{totalDetectedRows}</span>
+                                                <span className="text-sm text-emerald-700 font-medium">contacts detected in file</span>
                                             </div>
 
                                             {/* Data Preview Table */}

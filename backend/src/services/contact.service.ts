@@ -274,35 +274,38 @@ export class ContactService {
     /**
      * Extract headers and first 5 rows for mapping preview
      */
-    public getFilePreview(buffer: Buffer, ext: string): { headers: string[], rows: Record<string, any>[] } {
+    public getFilePreview(buffer: Buffer, ext: string): { headers: string[], rows: Record<string, any>[], totalRows: number } {
         let records: any[] = [];
+        let totalRows = 0;
         
         if (ext === 'csv') {
             const content = buffer.toString('utf-8');
-            records = csvParse(content, {
+            // Parse all rows to get total count
+            const allRecords = csvParse(content, {
                 columns: true,
                 skip_empty_lines: true,
                 trim: true,
                 relax_column_count: true,
                 relax_quotes: true,
-                to_line: 6
             });
+            totalRows = allRecords.length;
+            records = allRecords.slice(0, 5);
         } else if (ext === 'xlsx' || ext === 'xls') {
             const workbook = XLSX.read(buffer, { type: 'buffer' });
             const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            // We read a bit more rows, then slice, because sheet_to_json doesn't have a stop condition
             const allRecords = XLSX.utils.sheet_to_json(firstSheet, { defval: '', raw: false });
+            totalRows = allRecords.length;
             records = allRecords.slice(0, 5);
         } else {
             throw new Error('Unsupported file type');
         }
 
         if (records.length === 0) {
-            return { headers: [], rows: [] };
+            return { headers: [], rows: [], totalRows: 0 };
         }
 
         const headers = Object.keys(records[0]);
-        return { headers, rows: records };
+        return { headers, rows: records, totalRows };
     }
 
     /**
