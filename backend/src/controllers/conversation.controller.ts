@@ -7,6 +7,7 @@ import { aiService } from '../services/ai.service';
 import { leadService } from '../services/lead.service';
 import { whatsappService } from '../services/whatsapp.service';
 import { SenderType } from '@prisma/client';
+import { hashPhone, decrypt } from '../utils/crypto.util';
 
 /**
  * Get all conversations (leads with messages) for a factory
@@ -51,18 +52,44 @@ export const getConversations = catchAsync(async (req: AuthRequest, res: Respons
         prisma.lead.count({ where }),
     ]);
 
-    const conversations = leads.map((lead: any) => ({
-        id: lead.id,
-        customerPhone: lead.customerPhone,
-        customerName: lead.customerName,
-        profilePicture: lead.profilePicture,
-        status: lead.status,
-        lastMessage: lead.messages[0]?.content || '',
-        lastMessageSender: lead.messages[0]?.sender || null,
-        lastMessageTime: lead.messages[0]?.timestamp || lead.updatedAt,
-        messageCount: lead._count.messages,
-        unreadCount: lead.unreadCount || 0,
-    }));
+    // Look up contact names for leads that don't have a customerName
+    const leadsWithoutName = leads.filter((l: any) => !l.customerName);
+    const contactNameMap = new Map<string, string>();
+
+    if (leadsWithoutName.length > 0) {
+        const phoneHashes = leadsWithoutName.map((l: any) => hashPhone(l.customerPhone));
+        const contacts = await prisma.contact.findMany({
+            where: {
+                factoryId,
+                phoneHash: { in: phoneHashes },
+                name: { not: null },
+            },
+            select: { phoneHash: true, name: true },
+        });
+        contacts.forEach((c: any) => {
+            if (c.name) contactNameMap.set(c.phoneHash, c.name);
+        });
+    }
+
+    const conversations = leads.map((lead: any) => {
+        let displayName = lead.customerName;
+        if (!displayName) {
+            const ph = hashPhone(lead.customerPhone);
+            displayName = contactNameMap.get(ph) || null;
+        }
+        return {
+            id: lead.id,
+            customerPhone: lead.customerPhone,
+            customerName: displayName,
+            profilePicture: lead.profilePicture,
+            status: lead.status,
+            lastMessage: lead.messages[0]?.content || '',
+            lastMessageSender: lead.messages[0]?.sender || null,
+            lastMessageTime: lead.messages[0]?.timestamp || lead.updatedAt,
+            messageCount: lead._count.messages,
+            unreadCount: lead.unreadCount || 0,
+        };
+    });
 
     res.status(200).json(successResponse({
         conversations,

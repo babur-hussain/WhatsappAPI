@@ -804,8 +804,8 @@ export default function ContactsPage() {
             {/* ─── Import Modal ─────────────────────────────────────────────────── */}
             {showImportModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl">
-                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                    <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl max-h-[90vh] flex flex-col">
+                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
                             <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                                 <Upload className="w-5 h-5 text-indigo-600" /> Import Contacts
                             </h2>
@@ -814,7 +814,7 @@ export default function ContactsPage() {
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
-                        <div className="px-6 py-6 space-y-4">
+                        <div className="px-6 py-6 space-y-4 overflow-y-auto">
                             {errorMsg && (
                                 <div className="p-3 bg-red-50 text-red-700 rounded-xl text-sm border border-red-200 flex items-center gap-2">
                                     <AlertCircle className="w-4 h-4 shrink-0" /> {errorMsg}
