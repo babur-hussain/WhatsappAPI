@@ -157,11 +157,37 @@ export const getMessages = catchAsync(async (req: AuthRequest, res: Response) =>
         });
     }
 
+    let displayName = lead.customerName;
+
+    // If no name, try to look up from contacts using phone hash variants
+    if (!displayName) {
+        const digits = (lead as any).customerPhone.replace(/\D/g, '');
+        const variants = [digits];
+        if (digits.length > 10) variants.push(digits.slice(-10));
+        if (digits.startsWith('91') && digits.length > 10) variants.push(digits.slice(2));
+        if (digits.startsWith('1') && digits.length === 11) variants.push(digits.slice(1));
+
+        const allHashes = variants.map(v => hashPhone(v));
+        
+        const contact = await prisma.contact.findFirst({
+            where: {
+                factoryId,
+                phoneHash: { in: allHashes },
+                name: { not: null },
+            },
+            select: { name: true },
+        });
+        
+        if (contact?.name) {
+            displayName = contact.name;
+        }
+    }
+
     res.status(200).json(successResponse({
         lead: {
             id: lead.id,
             customerPhone: lead.customerPhone,
-            customerName: lead.customerName,
+            customerName: displayName,
             profilePicture: lead.profilePicture,
             status: lead.status,
             productInterest: lead.productInterest,
