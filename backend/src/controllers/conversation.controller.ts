@@ -54,29 +54,53 @@ export const getConversations = catchAsync(async (req: AuthRequest, res: Respons
 
     // Look up contact names for leads that don't have a customerName
     const leadsWithoutName = leads.filter((l: any) => !l.customerName);
-    const contactNameMap = new Map<string, string>();
+    const contactNameMap = new Map<string, string>(); // maps leadId -> contact name
 
     if (leadsWithoutName.length > 0) {
-        const phoneHashes = leadsWithoutName.map((l: any) => hashPhone(l.customerPhone));
+        // Generate all possible phone hash variants for each lead
+        // e.g. "+91 62641 34364" -> try hashes for "916264134364", "6264134364", etc.
+        const allHashes: string[] = [];
+        const hashToLeadId = new Map<string, string>();
+
+        for (const lead of leadsWithoutName) {
+            const digits = (lead as any).customerPhone.replace(/\D/g, '');
+            const variants = [digits]; // full digits
+            // Strip common country code prefixes (91 for India, 1 for US, etc.)
+            if (digits.length > 10) {
+                variants.push(digits.slice(-10)); // last 10 digits
+            }
+            if (digits.startsWith('91') && digits.length > 10) {
+                variants.push(digits.slice(2)); // strip 91
+            }
+            if (digits.startsWith('1') && digits.length === 11) {
+                variants.push(digits.slice(1)); // strip 1
+            }
+
+            for (const v of variants) {
+                const h = hashPhone(v);
+                allHashes.push(h);
+                hashToLeadId.set(h, (lead as any).id);
+            }
+        }
+
         const contacts = await prisma.contact.findMany({
             where: {
                 factoryId,
-                phoneHash: { in: phoneHashes },
+                phoneHash: { in: allHashes },
                 name: { not: null },
             },
             select: { phoneHash: true, name: true },
         });
         contacts.forEach((c: any) => {
-            if (c.name) contactNameMap.set(c.phoneHash, c.name);
+            if (c.name) {
+                const leadId = hashToLeadId.get(c.phoneHash);
+                if (leadId) contactNameMap.set(leadId, c.name);
+            }
         });
     }
 
     const conversations = leads.map((lead: any) => {
-        let displayName = lead.customerName;
-        if (!displayName) {
-            const ph = hashPhone(lead.customerPhone);
-            displayName = contactNameMap.get(ph) || null;
-        }
+        const displayName = lead.customerName || contactNameMap.get(lead.id) || null;
         return {
             id: lead.id,
             customerPhone: lead.customerPhone,
