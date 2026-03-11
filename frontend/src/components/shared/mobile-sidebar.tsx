@@ -19,6 +19,7 @@ import {
     MessageSquare,
     UserCog,
     Settings,
+    Wallet,
 } from "lucide-react";
 
 const navItems = [
@@ -34,6 +35,7 @@ const navItems = [
     { href: "/templates", label: "Templates", icon: FileText },
     { href: "/whatsapp", label: "WhatsApp", icon: MessageSquare },
     { href: "/team", label: "Team", icon: UserCog },
+    { href: "/wallet", label: "Wallet", icon: Wallet },
     { href: "/settings", label: "Settings", icon: Settings },
 ];
 

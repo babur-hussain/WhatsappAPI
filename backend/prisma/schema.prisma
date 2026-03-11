@@ -115,6 +115,17 @@ enum OrderSource {
   API
 }
 
+enum WalletTransactionType {
+  CREDIT
+  DEBIT
+}
+
+enum WalletTransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
 model Factory {
   id                        String  @id @default(uuid())
   factoryName               String
@@ -166,6 +177,7 @@ model Factory {
   contacts       Contact[]
   contactLists   ContactList[]
   importJobs     ImportJob[]
+  wallet         Wallet?
 }
 
 model User {
@@ -451,4 +463,32 @@ model ImportJob {
 
   @@index([factoryId])
   @@index([status])
+}
+
+model Wallet {
+  id        String   @id @default(uuid())
+  factoryId String   @unique
+  factory   Factory  @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  balance   Float    @default(0)
+  currency  String   @default("INR")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transactions WalletTransaction[]
+}
+
+model WalletTransaction {
+  id           String                  @id @default(uuid())
+  walletId     String
+  wallet       Wallet                  @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  type         WalletTransactionType
+  amount       Float
+  balanceAfter Float
+  description  String
+  referenceId  String?
+  status       WalletTransactionStatus @default(PENDING)
+  createdAt    DateTime                @default(now())
+
+  @@index([walletId])
+  @@index([createdAt])
 }
