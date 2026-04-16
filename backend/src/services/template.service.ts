@@ -125,7 +125,7 @@ export class TemplateService {
         );
 
         const sessionData = await sessionRes.json();
-        
+
         if (!sessionData.id) {
             logger.error(`Upload session creation failed: ${JSON.stringify(sessionData)}`);
             throw new Error(`Failed to create upload session: ${sessionData?.error?.message || 'Unknown error'}`);
@@ -314,15 +314,21 @@ export class TemplateService {
         });
 
         if (!response.ok) {
-            const errBody = await response.json().catch(() => ({}));
-            let message = errBody?.error?.message || response.statusText;
+            const rawText = await response.text();
+            logger.error(`[META_RAW_ERROR] ${response.status} ${response.statusText} - ${rawText}`);
+
+            let errBody: any = {};
+            try {
+                errBody = JSON.parse(rawText);
+            } catch (e) { }
+
+            let message = errBody?.error?.message || response.statusText || 'An unknown error occurred';
             if (errBody?.error?.error_data?.details) {
                 message += ` - ${errBody.error.error_data.details}`;
             } else if (errBody?.error?.error_user_title) {
                 message += ` - ${errBody.error.error_user_title}: ${errBody.error.error_user_msg}`;
             }
-            logger.error(`Template creation failed: ${JSON.stringify(errBody)}`);
-            throw new Error(`Failed to create template: ${message}`);
+            throw new Error(`${message}`);
         }
 
         return response.json();
