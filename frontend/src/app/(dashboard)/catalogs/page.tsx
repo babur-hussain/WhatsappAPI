@@ -16,24 +16,26 @@ export default function CatalogsPage() {
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState('');
 
-    // Dummy Factory ID for our mock auth middleware to work
-    const factoryId = 'mock-factory-id';
     const apiUrl = 'https://whatsappapi.lfvs.in/api/v1/catalog';
+    const getHeaders = () => {
+        const token = typeof document !== 'undefined' ? document.cookie.match(/(?:^|;\s*)accessToken=([^;]+)/)?.[1] || '' : '';
+        return {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        };
+    };
 
     const fetchCatalogs = async () => {
         try {
             const res = await fetch(apiUrl, {
-                headers: {
-                    'Authorization': 'Bearer test',
-                    'x-factory-id': factoryId,
-                },
+                headers: getHeaders(),
             });
             if (res.ok) {
                 const data = await res.json();
-                setCatalogs(data.catalogs);
+                setCatalogs(data.data?.catalogs || []);
             }
         } catch (e) {
-            console.error('Failed to fetch catalogs', e);
+            console.log('Failed to fetch catalogs', e);
         }
     };
 
@@ -60,8 +62,7 @@ export default function CatalogsPage() {
             const res = await fetch(`${apiUrl}/upload`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': 'Bearer test',
-                    'x-factory-id': factoryId,
+                    'Authorization': getHeaders().Authorization,
                 },
                 body: formData,
             });
@@ -85,14 +86,11 @@ export default function CatalogsPage() {
         try {
             await fetch(`${apiUrl}/${id}`, {
                 method: 'DELETE',
-                headers: {
-                    'Authorization': 'Bearer test',
-                    'x-factory-id': factoryId,
-                },
+                headers: getHeaders(),
             });
             fetchCatalogs();
         } catch (e) {
-            console.error('Failed to delete catalog');
+            console.log('Failed to delete catalog');
         }
     };
 

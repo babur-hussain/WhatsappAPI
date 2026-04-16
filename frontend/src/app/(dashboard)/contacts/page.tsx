@@ -149,7 +149,7 @@ export default function ContactsPage() {
                 setPagination(data.data?.pagination || { page: 1, limit: 50, total: 0, totalPages: 0 });
             }
         } catch (e) {
-            console.error('Failed to fetch contacts', e);
+            console.log('Failed to fetch contacts', e);
         } finally {
             setLoading(false);
         }

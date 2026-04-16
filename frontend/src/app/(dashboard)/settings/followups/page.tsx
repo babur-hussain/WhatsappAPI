@@ -30,9 +30,12 @@ interface FollowUpSettings {
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const API_BASE = 'https://whatsappapi.lfvs.in/api/v1/followups';
-const HEADERS = {
-    'Authorization': 'Bearer test',
-    'Content-Type': 'application/json',
+const getHeaders = () => {
+    const token = typeof document !== 'undefined' ? document.cookie.match(/(?:^|;\s*)accessToken=([^;]+)/)?.[1] || '' : '';
+    return {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+    };
 };
 
 const DELAY_OPTIONS = [
@@ -63,13 +66,13 @@ export default function FollowUpSettingsPage() {
     const fetchSettings = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${API_BASE}/settings`, { headers: HEADERS });
+            const res = await fetch(`${API_BASE}/settings`, { headers: getHeaders() });
             if (res.ok) {
                 const data = await res.json();
                 setSettings(data.data);
             }
         } catch (e) {
-            console.error('Failed to fetch follow-up settings', e);
+            console.log('Failed to fetch follow-up settings', e);
         } finally {
             setLoading(false);
         }
@@ -86,7 +89,7 @@ export default function FollowUpSettingsPage() {
         try {
             const res = await fetch(`${API_BASE}/settings`, {
                 method: 'PATCH',
-                headers: HEADERS,
+                headers: getHeaders(),
                 body: JSON.stringify({
                     followUpsEnabled: settings.followUpsEnabled,
                     followUps: settings.followUps.map((fu) => ({
@@ -104,7 +107,7 @@ export default function FollowUpSettingsPage() {
                 setTimeout(() => setSaved(false), 3000);
             }
         } catch (e) {
-            console.error('Failed to save settings', e);
+            console.log('Failed to save settings', e);
         } finally {
             setSaving(false);
         }

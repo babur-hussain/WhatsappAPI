@@ -1,17 +1,17 @@
 import { io } from 'socket.io-client';
 
-// In production, this would be an env var
-const URL = 'https://whatsappapi.lfvs.in';
+const URL = process.env.NEXT_PUBLIC_API_URL || 'https://whatsappapi.lfvs.in';
 
-// Replace with logic that fetches valid token when implementing full auth
-const token = 'test';
-// Replace with logic to grab factoryId when authenticated
-const factoryId = 'mock-factory-id';
+function getCookie(name: string): string {
+    if (typeof document === 'undefined') return '';
+    const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    return match ? match[2] : '';
+}
 
 export const socket = io(URL, {
-    auth: {
-        token,
-        factoryId
-    },
-    autoConnect: false // Connect manually when app loads/authenticates
+    auth: () => ({
+        token: getCookie('accessToken'),
+        factoryId: getCookie('factoryId'),
+    }),
+    autoConnect: false, // Connect manually when app loads/authenticates
 });

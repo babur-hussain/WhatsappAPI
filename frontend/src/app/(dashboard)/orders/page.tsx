@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import {
     ShoppingCart,
     Search,
@@ -10,7 +11,8 @@ import {
     Phone,
     Banknote,
     TrendingUp,
-    MoreVertical
+    MoreVertical,
+    Download
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -39,9 +41,12 @@ interface Analytics {
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const API_BASE = 'https://whatsappapi.lfvs.in/api/v1/orders';
-const HEADERS = {
-    'Authorization': 'Bearer test',
-    'Content-Type': 'application/json',
+const getHeaders = () => {
+    const token = typeof document !== 'undefined' ? document.cookie.match(/(?:^|;\s*)accessToken=([^;]+)/)?.[1] || '' : '';
+    return {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+    };
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -59,6 +64,7 @@ const SOURCE_COLORS: Record<string, string> = {
 };
 
 export default function OrdersPage() {
+    const { toast } = useToast();
     const [orders, setOrders] = useState<Order[]>([]);
     const [analytics, setAnalytics] = useState<Analytics | null>(null);
     const [loading, setLoading] = useState(true);
@@ -71,7 +77,7 @@ export default function OrdersPage() {
         setLoading(true);
         try {
             // Fetch analytics
-            const anRes = await fetch(`${API_BASE}/revenue`, { headers: HEADERS });
+            const anRes = await fetch(`${API_BASE}/revenue`, { headers: getHeaders() });
             if (anRes.ok) {
                 const anData = await anRes.json();
                 setAnalytics(anData.data);
@@ -82,13 +88,13 @@ export default function OrdersPage() {
             if (statusFilter) query.append('orderStatus', statusFilter);
             if (phoneSearch) query.append('customerPhone', phoneSearch);
 
-            const ordRes = await fetch(`${API_BASE}?${query.toString()}`, { headers: HEADERS });
+            const ordRes = await fetch(`${API_BASE}?${query.toString()}`, { headers: getHeaders() });
             if (ordRes.ok) {
                 const ordData = await ordRes.json();
                 setOrders(ordData.data.orders || []);
             }
         } catch (e) {
-            console.error('Failed to fetch data', e);
+            console.log('Failed to fetch data', e);
         } finally {
             setLoading(false);
         }
@@ -102,14 +108,17 @@ export default function OrdersPage() {
         try {
             const res = await fetch(`${API_BASE}/${orderId}/status`, {
                 method: 'PATCH',
-                headers: HEADERS,
+                headers: getHeaders(),
                 body: JSON.stringify({ orderStatus: newStatus }),
             });
             if (res.ok) {
-                fetchData(); // Refresh list and analytics
+                toast({ title: 'Status Updated', description: `Order status changed to ${newStatus}` });
+                fetchData();
+            } else {
+                toast({ title: 'Error', description: 'Failed to update order status', variant: 'destructive' });
             }
         } catch (e) {
-            console.error('Failed to update status', e);
+            toast({ title: 'Error', description: 'Failed to update order status', variant: 'destructive' });
         }
     };
 
@@ -132,14 +141,32 @@ export default function OrdersPage() {
     return (
         <div className="p-4 md:p-8 h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] overflow-y-auto bg-slate-50 relative space-y-6 md:space-y-8">
             {/* Header */}
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight text-slate-900 flex items-center">
-                    <ShoppingCart className="w-8 h-8 mr-3 text-indigo-600" />
-                    Orders
-                </h1>
-                <p className="text-slate-500 mt-1">
-                    Manage your purchases, update statuses, and track revenue seamlessly.
-                </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight text-slate-900 flex items-center">
+                        <ShoppingCart className="w-8 h-8 mr-3 text-indigo-600" />
+                        Orders
+                    </h1>
+                    <p className="text-slate-500 mt-1">
+                        Manage your purchases, update statuses, and track revenue seamlessly.
+                    </p>
+                </div>
+                <button
+                    onClick={async () => {
+                        const res = await fetch('https://whatsappapi.lfvs.in/api/v1/auth/export/orders', { headers: getHeaders() });
+                        if (res.ok) {
+                            const blob = await res.blob();
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url; a.download = 'orders_export.csv'; a.click();
+                            URL.revokeObjectURL(url);
+                        }
+                    }}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition shrink-0"
+                >
+                    <Download className="w-4 h-4" />
+                    Export CSV
+                </button>
             </div>
 
             {/* Analytics Cards */}

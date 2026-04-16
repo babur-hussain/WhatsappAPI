@@ -52,7 +52,7 @@ export default function WhatsAppPage() {
                 setConnectedPhoneNumberId(data.data.phoneNumberId || '');
             }
         } catch (e) {
-            console.error('Failed to fetch status:', e);
+            console.log('Failed to fetch status:', e);
         } finally {
             setLoading(false);
         }
@@ -96,7 +96,7 @@ export default function WhatsAppPage() {
                 setVerifyResult(null);
             }
         } catch (e) {
-            console.error('Connection failed:', e);
+            console.log('Connection failed:', e);
         } finally {
             setIsConnecting(false);
         }
@@ -111,7 +111,7 @@ export default function WhatsAppPage() {
             setConnectedNumber('');
             setConnectedPhoneNumberId('');
         } catch (e) {
-            console.error('Disconnect failed:', e);
+            console.log('Disconnect failed:', e);
         } finally {
             setIsDisconnecting(false);
         }

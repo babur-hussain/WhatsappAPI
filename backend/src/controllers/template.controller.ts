@@ -3,6 +3,7 @@ import { AuthRequest } from '../middlewares/firebase-auth.middleware';
 import { templateService } from '../services/template.service';
 import catchAsync from '../utils/catch-async';
 import { successResponse, errorResponse } from '../api/dto/response.dto';
+import { logger } from '../config/logger';
 
 // ─── List Templates ─────────────────────────────────────────────────────────
 
@@ -134,6 +135,7 @@ export const sendTemplate = catchAsync(async (req: AuthRequest, res: Response) =
         });
         res.status(200).json(successResponse(result));
     } catch (error) {
+        logger.error(`Error sending template: ${(error as Error).message}`);
         res.status(400).json(errorResponse((error as Error).message));
     }
 });

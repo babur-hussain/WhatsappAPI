@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, MessageSquare, ChevronRight, X, User as UserIcon } from 'lucide-react';
+import { Search, Filter, MessageSquare, ChevronRight, X, User as UserIcon, Download } from 'lucide-react';
 import { socket } from '@/lib/socket';
 import { useToast } from '@/hooks/use-toast';
 
@@ -45,17 +45,18 @@ export default function LeadsPage() {
     const [detailLoading, setDetailLoading] = useState(false);
     const { toast } = useToast();
 
-    // Auth mock
-    const factoryId = 'mock-factory-id';
+    // Auth
     const [isCreatingOrder, setIsCreatingOrder] = useState(false);
     const [orderForm, setOrderForm] = useState({ productName: '', quantity: 1, unitPrice: 0, notes: '' });
     const [orderFormSaving, setOrderFormSaving] = useState(false);
 
     const apiUrl = 'https://whatsappapi.lfvs.in/api/v1/leads';
-    const headers = {
-        'Authorization': 'Bearer test',
-        'x-factory-id': factoryId,
-        'Content-Type': 'application/json'
+    const getHeaders = () => {
+        const token = typeof document !== 'undefined' ? document.cookie.match(/(?:^|;\s*)accessToken=([^;]+)/)?.[1] || '' : '';
+        return {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        };
     };
 
     useEffect(() => {
@@ -102,14 +103,14 @@ export default function LeadsPage() {
                 ...(statusFilter && { status: statusFilter })
             });
 
-            const res = await fetch(`${apiUrl}?${query}`, { headers });
+            const res = await fetch(`${apiUrl}?${query}`, { headers: getHeaders() });
             if (res.ok) {
                 const data = await res.json();
                 setLeads(data.leads);
                 setTotalPages(data.totalPages);
             }
         } catch (e) {
-            console.error(e);
+            console.log(e);
         } finally {
             setLoading(false);
         }
@@ -117,7 +118,7 @@ export default function LeadsPage() {
 
     const fetchStats = async () => {
         try {
-            const res = await fetch(`${apiUrl}/stats`, { headers });
+            const res = await fetch(`${apiUrl}/stats`, { headers: getHeaders() });
             if (res.ok) setStats(await res.json());
         } catch (e) { }
     };
@@ -126,7 +127,7 @@ export default function LeadsPage() {
         setSelectedLead(lead);
         setDetailLoading(true);
         try {
-            const res = await fetch(`${apiUrl}/${lead.id}`, { headers });
+            const res = await fetch(`${apiUrl}/${lead.id}`, { headers: getHeaders() });
             if (res.ok) setLeadDetail(await res.json());
         } catch (e) { } finally {
             setDetailLoading(false);
@@ -138,7 +139,7 @@ export default function LeadsPage() {
         try {
             const res = await fetch(`${apiUrl}/${selectedLead.id}/status`, {
                 method: 'PATCH',
-                headers,
+                headers: getHeaders(),
                 body: JSON.stringify({ status: newStatus })
             });
             if (res.ok) {
@@ -163,7 +164,7 @@ export default function LeadsPage() {
         try {
             const res = await fetch(`${apiUrl.replace('/leads', '/orders')}/from-lead/${selectedLead.id}`, {
                 method: 'POST',
-                headers: { ...headers, 'Content-Type': 'application/json' },
+                headers: getHeaders(),
                 body: JSON.stringify(orderForm)
             });
             if (res.ok) {
@@ -197,9 +198,27 @@ export default function LeadsPage() {
             {/* Main Content */}
             <div className={`flex-1 flex flex-col transition-all duration-300 ${selectedLead ? 'md:pr-[400px]' : ''}`}>
                 <div className="p-4 md:p-8 pb-4 h-full overflow-y-auto">
-                    <div className="mb-8">
-                        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Lead Intelligence</h1>
-                        <p className="text-slate-500 mt-2">Track, manage, and convert your WhatsApp pipeline.</p>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-8">
+                        <div>
+                            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Lead Intelligence</h1>
+                            <p className="text-slate-500 mt-2">Track, manage, and convert your WhatsApp pipeline.</p>
+                        </div>
+                        <button
+                            onClick={async () => {
+                                const res = await fetch('https://whatsappapi.lfvs.in/api/v1/auth/export/leads', { headers: getHeaders() });
+                                if (res.ok) {
+                                    const blob = await res.blob();
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url; a.download = 'leads_export.csv'; a.click();
+                                    URL.revokeObjectURL(url);
+                                }
+                            }}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition shrink-0"
+                        >
+                            <Download className="w-4 h-4" />
+                            Export CSV
+                        </button>
                     </div>
 
                     {/* Stats Header */}

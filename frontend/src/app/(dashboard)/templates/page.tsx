@@ -211,7 +211,7 @@ export default function TemplatesPage() {
                 const data = await res.json();
                 apiTemplates = (data.data?.templates || []).map((t: Template) => ({ ...t, isDefault: false }));
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { console.log(e); }
 
         // Merge: API templates take priority, then add defaults not already present
         const apiNames = new Set(apiTemplates.map(t => t.name));

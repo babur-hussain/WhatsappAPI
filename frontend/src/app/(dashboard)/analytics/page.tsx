@@ -65,9 +65,12 @@ interface SalesPerformance {
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const API_BASE = 'https://whatsappapi.lfvs.in/api/v1/analytics';
-const HEADERS = {
-    'Authorization': 'Bearer test',
-    'Content-Type': 'application/json',
+const getHeaders = () => {
+    const token = typeof document !== 'undefined' ? document.cookie.match(/(?:^|;\s*)accessToken=([^;]+)/)?.[1] || '' : '';
+    return {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+    };
 };
 
 const PIE_COLORS = ['#6366f1', '#f59e0b', '#10b981'];
@@ -102,10 +105,10 @@ export default function AnalyticsPage() {
 
         try {
             const [dashRes, timeRes, prodRes, salesRes] = await Promise.all([
-                fetch(`${API_BASE}/dashboard`, { headers: HEADERS }),
-                fetch(`${API_BASE}/leads-over-time`, { headers: HEADERS }),
-                fetch(`${API_BASE}/top-products`, { headers: HEADERS }),
-                fetch(`${API_BASE}/sales-performance`, { headers: HEADERS }),
+                fetch(`${API_BASE}/dashboard`, { headers: getHeaders() }),
+                fetch(`${API_BASE}/leads-over-time`, { headers: getHeaders() }),
+                fetch(`${API_BASE}/top-products`, { headers: getHeaders() }),
+                fetch(`${API_BASE}/sales-performance`, { headers: getHeaders() }),
             ]);
 
             if (dashRes.ok) {
@@ -125,7 +128,7 @@ export default function AnalyticsPage() {
                 setSalesPerformance(d.data);
             }
         } catch (e) {
-            console.error('Failed to fetch analytics', e);
+            console.log('Failed to fetch analytics', e);
         } finally {
             setLoading(false);
             setRefreshing(false);

@@ -90,7 +90,7 @@ export default function BroadcastsPage() {
                 setBroadcasts(data.data || []);
             }
         } catch (e) {
-            console.error('Failed to fetch broadcasts', e);
+            console.log('Failed to fetch broadcasts', e);
         } finally {
             setLoading(false);
         }

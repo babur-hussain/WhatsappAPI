@@ -156,7 +156,7 @@ export default function ConversationsPage() {
                 setConversations(data.data.conversations);
             }
         } catch (e) {
-            console.error('Failed to fetch conversations:', e);
+            console.log('Failed to fetch conversations:', e);
         } finally {
             setLoading(false);
         }
@@ -177,7 +177,7 @@ export default function ConversationsPage() {
                 setConversations(prev => prev.map(c => c.id === id ? { ...c, unreadCount: 0 } : c));
             }
         } catch (e) {
-            console.error('Failed to fetch messages:', e);
+            console.log('Failed to fetch messages:', e);
         } finally {
             setMessagesLoading(false);
         }
@@ -206,7 +206,7 @@ export default function ConversationsPage() {
                 fetchConversations(search || undefined);
             }
         } catch (e) {
-            console.error('Failed to send reply:', e);
+            console.log('Failed to send reply:', e);
         } finally {
             setSending(false);
         }
@@ -223,7 +223,7 @@ export default function ConversationsPage() {
                 setReplyText(data.data.reply);
             }
         } catch (e) {
-            console.error('AI suggestion failed:', e);
+            console.log('AI suggestion failed:', e);
         } finally {
             setAiLoading(false);
         }

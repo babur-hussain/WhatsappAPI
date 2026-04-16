@@ -59,7 +59,7 @@ export const verifyPayment = catchAsync(async (req: AuthRequest, res: Response) 
     const factoryId = req.user?.factoryId;
     if (!factoryId) return res.status(401).json(errorResponse('Unauthorized', 'UNAUTHORIZED'));
 
-    const { razorpay_payment_id, razorpay_subscription_id, razorpay_signature } = req.body;
+    const { razorpay_payment_id, razorpay_subscription_id, razorpay_signature, amount } = req.body;
 
     billingService.verifyPayment(razorpay_payment_id, razorpay_subscription_id, razorpay_signature);
 
@@ -69,12 +69,13 @@ export const verifyPayment = catchAsync(async (req: AuthRequest, res: Response) 
         data: { status: SubscriptionStatus.ACTIVE }
     });
 
-    // Record payment
+    // Record payment — amount comes from the client (in paise) or defaults to 0 as fallback
+    const paymentAmount = amount ? Number(amount) / 100 : 0;
     await prisma.payment.create({
         data: {
             factoryId,
             razorpayPaymentId: razorpay_payment_id,
-            amount: 0, // Usually get this from webhook or API
+            amount: paymentAmount,
             currency: "INR",
             status: PaymentStatus.SUCCESS
         }

@@ -41,7 +41,7 @@ export default function BillingPage() {
                     setPayments(data.data.payments || []);
                 }
             } catch (error) {
-                console.error("Failed to load billing", error);
+                console.log("Failed to load billing", error);
             } finally {
                 setIsLoading(false);
             }

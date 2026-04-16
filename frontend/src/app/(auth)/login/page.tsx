@@ -53,8 +53,18 @@ export default function LoginPage() {
             }
         } catch (err: any) {
             setIsLoading(false);
-            console.error(err);
-            toast({ title: "Error", description: err.message || "Failed to connect to server.", variant: "destructive" });
+            // Ignore console.error(err) here because Next.js will intercept it and show a massive red Dev Overlay 
+            // for standard authentication failures like "invalid credentials".
+            console.log("Login failed:", err.message || err);
+            
+            let errorMessage = "Failed to connect to server.";
+            if (err.code === 'auth/invalid-credential') {
+                errorMessage = "Invalid email or password. Please try again.";
+            } else if (err.message) {
+                errorMessage = err.message; // fallback to firebase error message
+            }
+
+            toast({ title: "Login Failed", description: errorMessage, variant: "destructive" });
         }
     };
 

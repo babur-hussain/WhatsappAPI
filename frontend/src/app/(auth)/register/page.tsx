@@ -67,8 +67,21 @@ export default function RegisterPage() {
             }
         } catch (err: any) {
             setIsLoading(false);
-            console.error(err);
-            toast({ title: "Error", description: err.message || "Failed to create account.", variant: "destructive" });
+            // Ignore console.error(err) here because Next.js will intercept it and show a massive red Dev Overlay 
+            console.log("Registration failed:", err.message || err);
+            
+            let errorMessage = "Failed to create account.";
+            if (err.code === 'auth/email-already-in-use') {
+                errorMessage = "This email is already registered. Please sign in instead.";
+            } else if (err.code === 'auth/weak-password') {
+                errorMessage = "Password is too weak. Please use a stronger password.";
+            } else if (err.code === 'auth/invalid-email') {
+                errorMessage = "Please enter a valid email address.";
+            } else if (err.message) {
+                errorMessage = err.message;
+            }
+
+            toast({ title: "Registration Failed", description: errorMessage, variant: "destructive" });
         }
     };
 

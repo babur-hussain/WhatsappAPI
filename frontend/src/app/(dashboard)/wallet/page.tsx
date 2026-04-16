@@ -53,9 +53,12 @@ interface Pagination {
 // ─── Constants ──────────────────────────────────────────────────────────────
 
 const API_BASE = 'https://whatsappapi.lfvs.in/api/v1/wallet';
-const HEADERS = {
-    'Authorization': 'Bearer test',
-    'Content-Type': 'application/json',
+const getHeaders = () => {
+    const token = typeof document !== 'undefined' ? document.cookie.match(/(?:^|;\s*)accessToken=([^;]+)/)?.[1] || '' : '';
+    return {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+    };
 };
 
 const PRESET_AMOUNTS = [100, 500, 1000, 2000, 5000];
@@ -102,27 +105,27 @@ export default function WalletPage() {
 
     const fetchWallet = useCallback(async () => {
         try {
-            const res = await fetch(API_BASE, { headers: HEADERS });
+            const res = await fetch(API_BASE, { headers: getHeaders() });
             if (res.ok) {
                 const data = await res.json();
                 setWallet(data.data);
             }
         } catch (e) {
-            console.error('Failed to fetch wallet', e);
+            console.log('Failed to fetch wallet', e);
         }
     }, []);
 
     const fetchTransactions = useCallback(async (p: number = 1) => {
         setTxLoading(true);
         try {
-            const res = await fetch(`${API_BASE}/transactions?page=${p}&limit=10`, { headers: HEADERS });
+            const res = await fetch(`${API_BASE}/transactions?page=${p}&limit=10`, { headers: getHeaders() });
             if (res.ok) {
                 const data = await res.json();
                 setTransactions(data.data.transactions || []);
                 setPagination(data.data.pagination || null);
             }
         } catch (e) {
-            console.error('Failed to fetch transactions', e);
+            console.log('Failed to fetch transactions', e);
         } finally {
             setTxLoading(false);
         }
@@ -174,7 +177,7 @@ export default function WalletPage() {
             // 2. Create Razorpay Order
             const orderRes = await fetch(`${API_BASE}/recharge`, {
                 method: 'POST',
-                headers: HEADERS,
+                headers: getHeaders(),
                 body: JSON.stringify({ amount }),
             });
 
@@ -201,7 +204,7 @@ export default function WalletPage() {
                     try {
                         const verifyRes = await fetch(`${API_BASE}/verify-recharge`, {
                             method: 'POST',
-                            headers: HEADERS,
+                            headers: getHeaders(),
                             body: JSON.stringify({
                                 razorpay_order_id: response.razorpay_order_id,
                                 razorpay_payment_id: response.razorpay_payment_id,
@@ -237,7 +240,7 @@ export default function WalletPage() {
             const rzp = new window.Razorpay(options);
             rzp.open();
         } catch (e) {
-            console.error('Recharge failed', e);
+            console.log('Recharge failed', e);
             alert('Something went wrong. Please try again.');
             setIsProcessing(false);
         }
