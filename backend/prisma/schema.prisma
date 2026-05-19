@@ -141,6 +141,8 @@ model Factory {
   isOnboardingComplete      Boolean @default(false)
   isActive                  Boolean @default(true)
   apiKey                    String? @unique
+  apiSecret                 String? // HMAC signing secret for secure external API calls
+  allowedIps                String? // Comma-separated IP whitelist for external API (null = any)
   webhookUrl                String?
   webhookSecret             String?
   followUpsEnabled          Boolean @default(true)
@@ -161,8 +163,8 @@ model Factory {
   autoReplyAiPrompt      String?       @db.Text
   autoReplyAiModel       String?       @default("gpt-4o-mini")
 
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
   users          User[]
   leads          Lead[]
   messages       Message[]
@@ -178,6 +180,7 @@ model Factory {
   contactLists   ContactList[]
   importJobs     ImportJob[]
   wallet         Wallet?
+  externalLogs   ExternalMessageLog[]
 }
 
 model User {
@@ -400,20 +403,20 @@ model Order {
 }
 
 model Contact {
-  id           String              @id @default(uuid())
-  factoryId    String
-  factory      Factory             @relation(fields: [factoryId], references: [id], onDelete: Cascade)
-  phone        String              @db.Text // AES-256-GCM encrypted
-  phoneHash    String              // SHA-256 hash for dedup/lookup
-  name         String?
-  email        String?
-  company      String?
-  tags         Json?               // JSON array of string tags
-  customFields Json?               // Arbitrary key-value pairs from CSV columns
-  source       ContactSource       @default(MANUAL)
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
-  listMembers  ContactListMember[]
+  id                  String               @id @default(uuid())
+  factoryId           String
+  factory             Factory              @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  phone               String               @db.Text // AES-256-GCM encrypted
+  phoneHash           String // SHA-256 hash for dedup/lookup
+  name                String?
+  email               String?
+  company             String?
+  tags                Json? // JSON array of string tags
+  customFields        Json? // Arbitrary key-value pairs from CSV columns
+  source              ContactSource        @default(MANUAL)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  listMembers         ContactListMember[]
   broadcastRecipients BroadcastRecipient[]
 
   @@unique([factoryId, phoneHash])
@@ -458,7 +461,7 @@ model ImportJob {
   skippedCount  Int          @default(0)
   failedCount   Int          @default(0)
   status        ImportStatus @default(PROCESSING)
-  errors        Json?        // Array of error details
+  errors        Json? // Array of error details
   createdAt     DateTime     @default(now())
 
   @@index([factoryId])
@@ -491,4 +494,36 @@ model WalletTransaction {
 
   @@index([walletId])
   @@index([createdAt])
+}
+
+// ─── External API Message Log ─────────────────────────────────────────────────
+
+enum ExternalMessageStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+model ExternalMessageLog {
+  id            String                @id @default(uuid())
+  factoryId     String
+  factory       Factory               @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  to            String // Recipient phone number
+  messageType   String // text, template, document
+  content       String?               @db.Text // Message body or template name
+  metaMessageId String? // WhatsApp message ID from Meta
+  status        ExternalMessageStatus @default(QUEUED)
+  errorMessage  String?
+  source        String                @default("api") // api, webhook
+  correlationId String? // Client-provided request ID
+  deliveredAt   DateTime?
+  readAt        DateTime?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  @@index([factoryId, createdAt])
+  @@index([metaMessageId])
+  @@index([correlationId])
 }

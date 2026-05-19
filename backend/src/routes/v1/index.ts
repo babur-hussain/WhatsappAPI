@@ -19,6 +19,7 @@ import templateRoutes from './template.routes';
 import uploadRoutes from './upload.routes';
 import contactRoutes from './contact.routes';
 import walletRoutes from './wallet.routes';
+import externalRoutes from './external.routes';
 
 const router = Router();
 
@@ -42,6 +43,7 @@ router.use('/templates', templateRoutes);
 router.use('/upload', uploadRoutes);
 router.use('/contacts', contactRoutes);
 router.use('/wallet', walletRoutes);
+router.use('/external', externalRoutes);
 
 export default router;
 
