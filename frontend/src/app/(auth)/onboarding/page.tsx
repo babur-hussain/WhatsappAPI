@@ -49,7 +49,10 @@ export default function OnboardingPage() {
         try {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/factory/whatsapp-number`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getAuthToken()}`
+                },
                 body: JSON.stringify({ whatsappNumber, whatsappPhoneNumberId: phoneNumberId })
             });
             const data = await res.json();
@@ -77,6 +80,7 @@ export default function OnboardingPage() {
         try {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/catalog/upload`, {
                 method: 'POST',
+                headers: { 'Authorization': `Bearer ${getAuthToken()}` },
                 body: formData
             });
             const data = await res.json();

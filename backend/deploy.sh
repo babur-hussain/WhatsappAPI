@@ -29,11 +29,11 @@ echo "🚀 Starting LoomiFlow Deployment to EC2 ($EC2_HOST)..."
 
 # 1. Sync files to EC2 
 echo "📦 Syncing project files to EC2..."
-rsync -avz --exclude 'node_modules' --exclude '.git' --exclude 'dist' --exclude '.next' -e "ssh -i $EC2_KEY_PATH" ../ $EC2_USER@$EC2_HOST:$REMOTE_DIR/
+rsync -avz --exclude 'node_modules' --exclude '.git' --exclude 'dist' --exclude '.next' -e "ssh -i $EC2_KEY_PATH -o StrictHostKeyChecking=no" ../ $EC2_USER@$EC2_HOST:$REMOTE_DIR/
 
 # 2. Execute Deployment Commands on EC2
 echo "⚙️ Building and restarting Docker containers on EC2..."
-ssh -i $EC2_KEY_PATH $EC2_USER@$EC2_HOST << 'EOF'
+ssh -i $EC2_KEY_PATH -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << 'EOF'
   mkdir -p ~/loomiflow
   cd ~/loomiflow || exit 1
   
