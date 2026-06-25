@@ -64,6 +64,17 @@ export const authService = {
             include: { factory: { include: { subscriptions: true } } }
         });
 
+        // Automatically create a 14-day Free Trial subscription
+        await prisma.subscription.create({
+            data: {
+                factoryId: factory.id,
+                planName: 'FREE_TRIAL',
+                status: 'ACTIVE',
+                currentPeriodStart: new Date(),
+                currentPeriodEnd: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+            }
+        });
+
         const safeFactory = { ...factory } as any;
         delete safeFactory.whatsappAccessToken;
         delete safeFactory.whatsappBusinessAccountId;
@@ -71,7 +82,7 @@ export const authService = {
         return {
             user: { id: user.id, email: user.email, name: user.name, role: user.role },
             factory: safeFactory,
-            subscriptionStatus: 'INACTIVE',
+            subscriptionStatus: 'ACTIVE',
             onboardingComplete: false
         };
     },
