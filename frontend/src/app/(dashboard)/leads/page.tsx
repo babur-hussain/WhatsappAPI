@@ -105,9 +105,11 @@ export default function LeadsPage() {
 
             const res = await fetch(`${apiUrl}?${query}`, { headers: getHeaders() });
             if (res.ok) {
-                const data = await res.json();
-                setLeads(data.leads);
-                setTotalPages(data.totalPages);
+                const response = await res.json();
+                if (response.success && response.data) {
+                    setLeads(response.data.leads || []);
+                    setTotalPages(response.data.totalPages || 1);
+                }
             }
         } catch (e) {
             console.log(e);
@@ -119,7 +121,10 @@ export default function LeadsPage() {
     const fetchStats = async () => {
         try {
             const res = await fetch(`${apiUrl}/stats`, { headers: getHeaders() });
-            if (res.ok) setStats(await res.json());
+            if (res.ok) {
+                const response = await res.json();
+                if (response.success && response.data) setStats(response.data);
+            }
         } catch (e) { }
     };
 
@@ -128,7 +133,10 @@ export default function LeadsPage() {
         setDetailLoading(true);
         try {
             const res = await fetch(`${apiUrl}/${lead.id}`, { headers: getHeaders() });
-            if (res.ok) setLeadDetail(await res.json());
+            if (res.ok) {
+                const response = await res.json();
+                if (response.success && response.data) setLeadDetail(response.data);
+            }
         } catch (e) { } finally {
             setDetailLoading(false);
         }
