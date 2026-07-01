@@ -282,4 +282,22 @@ router.get('/export/orders', catchAsync(async (req: AuthRequest, res: Response) 
     res.send(csv);
 }));
 
+// ─── POST /push-token — Save Expo push token for user ───────────────────────
+router.post('/push-token', catchAsync(async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json(errorResponse('Unauthorized', 'UNAUTHORIZED'));
+
+    const { token } = req.body;
+    if (!token) {
+        return res.status(400).json(errorResponse('Push token is required', 'VALIDATION_ERROR'));
+    }
+
+    await prisma.user.update({
+        where: { id: userId },
+        data: { expoPushToken: token },
+    });
+
+    res.json(successResponse({ success: true }));
+}));
+
 export default router;

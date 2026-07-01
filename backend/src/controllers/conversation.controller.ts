@@ -8,13 +8,16 @@ import { leadService } from '../services/lead.service';
 import { whatsappService } from '../services/whatsapp.service';
 import { SenderType } from '@prisma/client';
 import { hashPhone, decrypt } from '../utils/crypto.util';
+import { LeadStatus, LeadSource } from '@prisma/client';
 
 /**
  * Get all conversations (leads with messages) for a factory
  */
 export const getConversations = catchAsync(async (req: AuthRequest, res: Response) => {
     const factoryId = req.user?.factoryId;
-    if (!factoryId) return res.status(401).json(errorResponse('Unauthorized'));
+    const isSuperAdmin = req.user?.role === 'SUPER_ADMIN';
+    
+    if (!factoryId && !isSuperAdmin) return res.status(401).json(errorResponse('Unauthorized'));
 
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 30;
@@ -22,9 +25,12 @@ export const getConversations = catchAsync(async (req: AuthRequest, res: Respons
     const skip = (page - 1) * limit;
 
     const where: any = {
-        factoryId,
         messages: { some: {} }, // Only leads that have messages
     };
+    
+    if (factoryId) {
+        where.factoryId = factoryId;
+    }
 
     if (search) {
         where.OR = [
@@ -83,12 +89,14 @@ export const getConversations = catchAsync(async (req: AuthRequest, res: Respons
             }
         }
 
+        const contactWhere: any = {
+            phoneHash: { in: allHashes },
+            name: { not: null },
+        };
+        if (factoryId) contactWhere.factoryId = factoryId;
+
         const contacts = await prisma.contact.findMany({
-            where: {
-                factoryId,
-                phoneHash: { in: allHashes },
-                name: { not: null },
-            },
+            where: contactWhere,
             select: { phoneHash: true, name: true },
         });
         contacts.forEach((c: any) => {
@@ -126,15 +134,20 @@ export const getConversations = catchAsync(async (req: AuthRequest, res: Respons
  */
 export const getMessages = catchAsync(async (req: AuthRequest, res: Response) => {
     const factoryId = req.user?.factoryId;
-    if (!factoryId) return res.status(401).json(errorResponse('Unauthorized'));
+    const isSuperAdmin = req.user?.role === 'SUPER_ADMIN';
+
+    if (!factoryId && !isSuperAdmin) return res.status(401).json(errorResponse('Unauthorized'));
 
     const leadId = req.params.leadId;
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 50;
     const skip = (page - 1) * limit;
 
+    const leadWhere: any = { id: leadId };
+    if (factoryId) leadWhere.factoryId = factoryId;
+
     const lead = await prisma.lead.findFirst({
-        where: { id: leadId, factoryId },
+        where: leadWhere,
     });
 
     if (!lead) return res.status(404).json(errorResponse('Conversation not found'));
@@ -169,12 +182,14 @@ export const getMessages = catchAsync(async (req: AuthRequest, res: Response) =>
 
         const allHashes = variants.map(v => hashPhone(v));
         
+        const contactWhere: any = {
+            phoneHash: { in: allHashes },
+            name: { not: null },
+        };
+        if (factoryId) contactWhere.factoryId = factoryId;
+
         const contact = await prisma.contact.findFirst({
-            where: {
-                factoryId,
-                phoneHash: { in: allHashes },
-                name: { not: null },
-            },
+            where: contactWhere,
             select: { name: true },
         });
         
@@ -203,21 +218,26 @@ export const getMessages = catchAsync(async (req: AuthRequest, res: Response) =>
  */
 export const sendReply = catchAsync(async (req: AuthRequest, res: Response) => {
     const factoryId = req.user?.factoryId;
-    if (!factoryId) return res.status(401).json(errorResponse('Unauthorized'));
+    const isSuperAdmin = req.user?.role === 'SUPER_ADMIN';
+
+    if (!factoryId && !isSuperAdmin) return res.status(401).json(errorResponse('Unauthorized'));
 
     const leadId = req.params.leadId;
     const { message } = req.body;
 
     if (!message) return res.status(400).json(errorResponse('Message is required'));
 
-    const lead = await prisma.lead.findFirst({ where: { id: leadId, factoryId } });
+    const leadWhere: any = { id: leadId };
+    if (factoryId) leadWhere.factoryId = factoryId;
+
+    const lead = await prisma.lead.findFirst({ where: leadWhere });
     if (!lead) return res.status(404).json(errorResponse('Conversation not found'));
 
     // Send via WhatsApp - wrap in try/catch so message is still stored even if WA fails
     let whatsappMessageId: string | undefined;
     let sendError: string | null = null;
     try {
-        const sendResult = await whatsappService.sendTextMessage(factoryId, lead.customerPhone, message);
+        const sendResult = await whatsappService.sendTextMessage(lead.factoryId, lead.customerPhone, message);
         whatsappMessageId = sendResult?.messages?.[0]?.id || undefined;
     } catch (err: any) {
         console.error('WhatsApp send failed:', err.message);
@@ -228,7 +248,7 @@ export const sendReply = catchAsync(async (req: AuthRequest, res: Response) => {
     // Store in conversation history
     const stored = await leadService.processOutgoingMessage({
         leadId,
-        factoryId,
+        factoryId: lead.factoryId,
         content: message,
         sender: SenderType.ADMIN,
         timestamp: new Date(),
@@ -248,14 +268,19 @@ export const sendReply = catchAsync(async (req: AuthRequest, res: Response) => {
  */
 export const getSuggestedReply = catchAsync(async (req: AuthRequest, res: Response) => {
     const factoryId = req.user?.factoryId;
-    if (!factoryId) return res.status(401).json(errorResponse('Unauthorized'));
+    const isSuperAdmin = req.user?.role === 'SUPER_ADMIN';
+
+    if (!factoryId && !isSuperAdmin) return res.status(401).json(errorResponse('Unauthorized'));
 
     const leadId = req.params.leadId;
 
-    const lead = await prisma.lead.findFirst({ where: { id: leadId, factoryId } });
+    const leadWhere: any = { id: leadId };
+    if (factoryId) leadWhere.factoryId = factoryId;
+
+    const lead = await prisma.lead.findFirst({ where: leadWhere });
     if (!lead) return res.status(404).json(errorResponse('Conversation not found'));
 
-    const analysis = await aiService.generateSuggestedReply(factoryId, leadId);
+    const analysis = await aiService.generateSuggestedReply(lead.factoryId, leadId);
 
     res.status(200).json(successResponse(analysis));
 });
@@ -265,11 +290,16 @@ export const getSuggestedReply = catchAsync(async (req: AuthRequest, res: Respon
  */
 export const markAsRead = catchAsync(async (req: AuthRequest, res: Response) => {
     const factoryId = req.user?.factoryId;
-    if (!factoryId) return res.status(401).json(errorResponse('Unauthorized'));
+    const isSuperAdmin = req.user?.role === 'SUPER_ADMIN';
+
+    if (!factoryId && !isSuperAdmin) return res.status(401).json(errorResponse('Unauthorized'));
 
     const leadId = req.params.leadId;
 
-    const lead = await prisma.lead.findFirst({ where: { id: leadId, factoryId } });
+    const leadWhere: any = { id: leadId };
+    if (factoryId) leadWhere.factoryId = factoryId;
+
+    const lead = await prisma.lead.findFirst({ where: leadWhere });
     if (!lead) return res.status(404).json(errorResponse('Conversation not found'));
 
     if ((lead as any).unreadCount > 0) {
@@ -280,4 +310,57 @@ export const markAsRead = catchAsync(async (req: AuthRequest, res: Response) => 
     }
 
     res.status(200).json(successResponse({ unreadCount: 0 }));
+});
+
+/**
+ * Initiate a new conversation with a contact (resolves phone number to leadId)
+ */
+export const initiateConversation = catchAsync(async (req: AuthRequest, res: Response) => {
+    const factoryId = req.user?.factoryId;
+    const isSuperAdmin = req.user?.role === 'SUPER_ADMIN';
+
+    if (!factoryId && !isSuperAdmin) return res.status(401).json(errorResponse('Unauthorized'));
+    const effectiveFactoryId = factoryId!; // Must have a factory context
+
+    let { customerPhone, customerName } = req.body;
+
+    if (!customerPhone) return res.status(400).json(errorResponse('customerPhone is required'));
+
+    // Clean phone number (strip non-digits)
+    customerPhone = customerPhone.replace(/\D/g, '');
+    
+    // Default to +91 if no country code and length is 10
+    if (customerPhone.length === 10) {
+        customerPhone = '91' + customerPhone;
+    }
+
+    // Check if lead already exists
+    let lead = await prisma.lead.findFirst({
+        where: {
+            factoryId: effectiveFactoryId,
+            customerPhone: customerPhone,
+        }
+    });
+
+    if (!lead) {
+        // Create new lead
+        lead = await prisma.lead.create({
+            data: {
+                factoryId: effectiveFactoryId,
+                customerPhone,
+                customerName: customerName || null,
+                status: LeadStatus.NEW,
+                source: LeadSource.WHATSAPP,
+                unreadCount: 0
+            }
+        });
+    } else if (customerName && !lead.customerName) {
+        // Update name if we have one and lead doesn't
+        lead = await prisma.lead.update({
+            where: { id: lead.id },
+            data: { customerName }
+        });
+    }
+
+    res.status(200).json(successResponse({ leadId: lead.id }));
 });

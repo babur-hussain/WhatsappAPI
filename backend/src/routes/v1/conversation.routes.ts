@@ -7,6 +7,7 @@ const router = Router();
 router.use(protect);
 
 router.get('/', conversationController.getConversations);
+router.post('/initiate', conversationController.initiateConversation);
 router.get('/:leadId/messages', conversationController.getMessages);
 router.post('/:leadId/reply', conversationController.sendReply);
 router.get('/:leadId/suggest', conversationController.getSuggestedReply);

@@ -56,6 +56,44 @@ export class WhatsAppService {
             body: JSON.stringify(payload),
         });
 
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error?.message || 'Failed to send WhatsApp text message');
+        }
+
+        return data;
+    }
+
+    /**
+     * Send a media message via Meta Cloud API using factory-specific credentials
+     */
+    public async sendMediaMessage(factoryId: string, to: string, url: string, mediaType: 'image' | 'document' | 'video' | 'audio', caption?: string): Promise<any> {
+        const { phoneNumberId, accessToken } = await this.getFactoryCredentials(factoryId);
+
+        const payload: any = {
+            messaging_product: 'whatsapp',
+            recipient_type: 'individual',
+            to,
+            type: mediaType,
+            [mediaType]: {
+                link: url,
+            }
+        };
+
+        if (caption && (mediaType === 'image' || mediaType === 'video' || mediaType === 'document')) {
+            payload[mediaType].caption = caption;
+        }
+
+        const response = await fetch(`https://graph.facebook.com/v21.0/${phoneNumberId}/messages`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
         if (!response.ok) {
             const errorBody = await response.text();
             throw new Error(`Failed to send WhatsApp message: ${response.statusText} - ${errorBody}`);

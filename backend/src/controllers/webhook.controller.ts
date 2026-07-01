@@ -7,6 +7,7 @@ import { getIO } from '../socket/socket.server';
 import prisma from '../config/database';
 import catchAsync from '../utils/catch-async';
 import { decrypt } from '../utils/crypto.util';
+import { pushService } from '../services/push.service';
 
 /**
  * Fetch the WhatsApp profile picture URL for a given phone number using Meta Cloud API.
@@ -140,6 +141,21 @@ export const receiveWebhook = catchAsync(async (req: Request, res: Response) => 
                 io.to(`factory:${factory.id}`).emit('new_message', messagePayload);
                 // Also emit globally for debugging
                 io.emit('new_message', messagePayload);
+            }
+
+            // Send Push Notifications
+            const usersWithTokens = await prisma.user.findMany({
+                where: { factoryId: factory.id, expoPushToken: { not: null } },
+                select: { expoPushToken: true }
+            });
+            const pushTokens = usersWithTokens.map(u => u.expoPushToken as string);
+            
+            if (pushTokens.length > 0) {
+                const title = isNewLead ? 'New Lead!' : (contactName || `+${customerPhone}`);
+                const body = messageText.length > 100 ? messageText.substring(0, 100) + '...' : messageText;
+                
+                // Do not await this so it doesn't block the webhook response
+                pushService.sendPushNotification(pushTokens, title, body, { leadId: lead.id, url: `/chat/${lead.id}` }).catch(console.error);
             }
 
             if (isNewLead) {

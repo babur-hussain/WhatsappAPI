@@ -199,6 +199,7 @@ model User {
   email         String   @unique
   phone         String?
   role          Role     @default(SALES)
+  expoPushToken String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   assignedLeads Lead[]   @relation("AssignedUser")
