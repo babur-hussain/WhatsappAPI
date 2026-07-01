@@ -14,13 +14,11 @@ export default function WhatsAppSettingsPage() {
     const [metaConfig, setMetaConfig] = useState({ webhookUrl: '', verifyToken: '' });
 
     useEffect(() => {
-        // We simulate fetching the global webhook URL and verify token 
-        // that the user needs to paste into the Meta Developer Dashboard.
-        // In a real prod environment, these might be read from an admin config endpoint.
-        const origin = window.location.origin.replace("3000", "8000"); // Assuming backend is on 8000
+        // We use the backend API URL for the webhook
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || window.location.origin;
         setMetaConfig({
-            webhookUrl: `${origin}/api/v1/billing/webhook`, // Or whatsapp webhook
-            verifyToken: "LOOMIFLOW_WEBHOOK_SECRET_2025" // Demo static
+            webhookUrl: `${baseUrl}/api/v1/webhook`, 
+            verifyToken: process.env.NEXT_PUBLIC_WHATSAPP_VERIFY_TOKEN || "loomiflow_test_token"
         });
 
         // Fetch User
