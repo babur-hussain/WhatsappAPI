@@ -112,16 +112,18 @@ export class LeadService {
             if (!lead) throw new Error('Lead not found');
 
             // Store the message
+            const messageData: any = {
+                leadId,
+                factoryId,
+                content,
+                sender,
+                timestamp,
+            };
+            if (whatsappMessageId) {
+                messageData.whatsappMessageId = whatsappMessageId;
+            }
             const message = await tx.message.create({
-                data: {
-                    leadId,
-                    factoryId,
-                    content,
-                    sender,
-                    timestamp,
-                    whatsappMessageId: whatsappMessageId || null,
-                    status: whatsappMessageId ? 'SENT' : 'SENT',
-                },
+                data: messageData,
             });
 
             // Calculate response time if first admin/sales reply

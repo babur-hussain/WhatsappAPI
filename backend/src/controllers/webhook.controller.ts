@@ -262,7 +262,7 @@ export const receiveWebhook = catchAsync(async (req: Request, res: Response) => 
 
             try {
                 // Find the message by whatsappMessageId
-                const message = await prisma.message.findUnique({
+                const message = await (prisma.message as any).findFirst({
                     where: { whatsappMessageId },
                     select: { id: true, leadId: true, factoryId: true, status: true },
                 });

@@ -215,7 +215,14 @@ export const sendReply = catchAsync(async (req: AuthRequest, res: Response) => {
 
     // Send via WhatsApp
     const sendResult = await whatsappService.sendTextMessage(factoryId, lead.customerPhone, message);
-    const whatsappMessageId = sendResult?.messages?.[0]?.id || null;
+    
+    // Try to capture the WhatsApp message ID for delivery tracking
+    let whatsappMessageId: string | undefined;
+    try {
+        whatsappMessageId = sendResult?.messages?.[0]?.id || undefined;
+    } catch (e) {
+        // Non-critical: wamid extraction failed, message still sent
+    }
 
     // Store in conversation history
     const stored = await leadService.processOutgoingMessage({
