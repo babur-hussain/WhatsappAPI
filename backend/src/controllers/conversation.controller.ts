@@ -214,7 +214,8 @@ export const sendReply = catchAsync(async (req: AuthRequest, res: Response) => {
     if (!lead) return res.status(404).json(errorResponse('Conversation not found'));
 
     // Send via WhatsApp
-    await whatsappService.sendTextMessage(factoryId, lead.customerPhone, message);
+    const sendResult = await whatsappService.sendTextMessage(factoryId, lead.customerPhone, message);
+    const whatsappMessageId = sendResult?.messages?.[0]?.id || null;
 
     // Store in conversation history
     const stored = await leadService.processOutgoingMessage({
@@ -223,6 +224,7 @@ export const sendReply = catchAsync(async (req: AuthRequest, res: Response) => {
         content: message,
         sender: SenderType.ADMIN,
         timestamp: new Date(),
+        whatsappMessageId,
     });
 
     res.status(200).json(successResponse(stored));

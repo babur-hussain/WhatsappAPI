@@ -103,8 +103,9 @@ export class LeadService {
         content: string;
         sender: SenderType;
         timestamp: Date;
+        whatsappMessageId?: string;
     }) {
-        const { leadId, factoryId, content, sender, timestamp } = params;
+        const { leadId, factoryId, content, sender, timestamp, whatsappMessageId } = params;
 
         return await prisma.$transaction(async (tx: any) => {
             const lead = await tx.lead.findUnique({ where: { id: leadId } });
@@ -118,6 +119,8 @@ export class LeadService {
                     content,
                     sender,
                     timestamp,
+                    whatsappMessageId: whatsappMessageId || null,
+                    status: whatsappMessageId ? 'SENT' : 'SENT',
                 },
             });
 

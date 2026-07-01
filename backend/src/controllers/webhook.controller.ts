@@ -245,6 +245,77 @@ export const receiveWebhook = catchAsync(async (req: Request, res: Response) => 
             }
         }
 
+        // Handle message status updates (delivered, read, etc.)
+        if (
+            body.entry &&
+            body.entry[0].changes &&
+            body.entry[0].changes[0] &&
+            body.entry[0].changes[0].value.statuses &&
+            body.entry[0].changes[0].value.statuses[0]
+        ) {
+            const statusUpdate = body.entry[0].changes[0].value.statuses[0];
+            const whatsappMessageId = statusUpdate.id; // wamid
+            const status = statusUpdate.status; // sent, delivered, read, failed
+            const statusTimestamp = statusUpdate.timestamp ? new Date(parseInt(statusUpdate.timestamp) * 1000) : new Date();
+
+            console.log(`Webhook Status Update: wamid=${whatsappMessageId} status=${status}`);
+
+            try {
+                // Find the message by whatsappMessageId
+                const message = await prisma.message.findUnique({
+                    where: { whatsappMessageId },
+                    select: { id: true, leadId: true, factoryId: true, status: true },
+                });
+
+                if (message) {
+                    // Only update if the new status is "higher" than the current one
+                    const statusOrder: Record<string, number> = { SENT: 0, DELIVERED: 1, READ: 2, FAILED: -1 };
+                    const newStatus = status.toUpperCase() as string;
+                    const currentOrder = statusOrder[message.status] ?? -1;
+                    const newOrder = statusOrder[newStatus] ?? -1;
+
+                    if (newOrder > currentOrder) {
+                        const updateData: any = { status: newStatus };
+
+                        if (newStatus === 'DELIVERED') {
+                            updateData.deliveredAt = statusTimestamp;
+                        } else if (newStatus === 'READ') {
+                            updateData.readAt = statusTimestamp;
+                            // Also set deliveredAt if it wasn't set (sometimes "read" comes without "delivered")
+                            if (!message.status || message.status === 'SENT') {
+                                updateData.deliveredAt = statusTimestamp;
+                            }
+                        }
+
+                        await prisma.message.update({
+                            where: { id: message.id },
+                            data: updateData,
+                        });
+
+                        // Emit real-time status update to frontend
+                        try {
+                            const io = getIO();
+                            io.to(`factory:${message.factoryId}`).emit('message_status_update', {
+                                messageId: message.id,
+                                leadId: message.leadId,
+                                status: newStatus,
+                                deliveredAt: updateData.deliveredAt?.toISOString() || null,
+                                readAt: updateData.readAt?.toISOString() || null,
+                            });
+                        } catch (e) {
+                            // Socket not available, skip
+                        }
+
+                        console.log(`Message ${message.id} status updated to ${newStatus}`);
+                    }
+                } else {
+                    console.log(`No message found for wamid: ${whatsappMessageId}`);
+                }
+            } catch (err: any) {
+                console.error(`Error processing status update: ${err.message}`);
+            }
+        }
+
         res.sendStatus(200);
     } else {
         res.sendStatus(404);

@@ -61,7 +61,8 @@ export class WhatsAppService {
             throw new Error(`Failed to send WhatsApp message: ${response.statusText} - ${errorBody}`);
         }
 
-        return response.json();
+        const result = await response.json();
+        return result; // result.messages[0].id contains the wamid
     }
 
     /**

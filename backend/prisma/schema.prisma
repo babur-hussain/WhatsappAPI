@@ -42,6 +42,13 @@ enum SenderType {
   ADMIN
 }
 
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
 enum SubscriptionStatus {
   ACTIVE
   INACTIVE
@@ -297,18 +304,23 @@ model LeadActivity {
 }
 
 model Message {
-  id        String     @id @default(uuid())
-  leadId    String
-  lead      Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  factoryId String
-  factory   Factory    @relation(fields: [factoryId], references: [id], onDelete: Cascade)
-  sender    SenderType
-  content   String     @db.Text
-  timestamp DateTime   @default(now())
+  id                String        @id @default(uuid())
+  leadId            String
+  lead              Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  factoryId         String
+  factory           Factory       @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  sender            SenderType
+  content           String        @db.Text
+  timestamp         DateTime      @default(now())
+  whatsappMessageId String?       @unique
+  status            MessageStatus @default(SENT)
+  deliveredAt       DateTime?
+  readAt            DateTime?
 
   @@index([leadId])
   @@index([factoryId])
   @@index([timestamp])
+  @@index([whatsappMessageId])
 }
 
 model Catalog {

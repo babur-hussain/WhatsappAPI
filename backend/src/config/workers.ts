@@ -19,7 +19,8 @@ export const initWorkers = () => {
         const reply = await aiService.generateSmartReply(factoryId, messageText, context);
 
         // Send via WhatsApp
-        await whatsappService.sendTextMessage(factoryId, customerPhone, reply);
+        const sendResult = await whatsappService.sendTextMessage(factoryId, customerPhone, reply);
+        const whatsappMessageId = sendResult?.messages?.[0]?.id || null;
 
         // Store the outgoing AI reply in conversation history
         const lead = await prisma.lead.findFirst({
@@ -33,7 +34,8 @@ export const initWorkers = () => {
                 factoryId,
                 content: reply,
                 sender: SenderType.BOT,
-                timestamp: new Date()
+                timestamp: new Date(),
+                whatsappMessageId,
             });
         }
 

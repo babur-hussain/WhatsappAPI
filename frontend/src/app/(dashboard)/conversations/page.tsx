@@ -33,7 +33,59 @@ interface Message {
     content: string;
     sender: 'CUSTOMER' | 'BOT' | 'ADMIN';
     timestamp: string;
+    status?: 'SENT' | 'DELIVERED' | 'READ' | 'FAILED';
 }
+
+// Tick indicator component for message delivery status
+const MessageTicks = ({ status, isLight = false }: { status?: string; isLight?: boolean }) => {
+    if (!status) return null;
+    const baseClass = `inline-flex items-center ml-1`;
+    
+    if (status === 'READ') {
+        // Blue double ticks
+        return (
+            <span className={baseClass} title="Read">
+                <svg width="16" height="11" viewBox="0 0 16 11" fill="none">
+                    <path d="M11.071 0.653l-5.657 5.657-1.414-1.414L3.293 5.603l2.121 2.121 6.364-6.364.707.707-7.071 7.071L1.172 4.896l1.414-1.414 1.414 1.414L9.657 0.653l1.414 0z" fill="#53BDEB"/>
+                    <path d="M14.071 0.653l-5.657 5.657-.707-.707 5.657-5.657.707.707z" fill="#53BDEB"/>
+                </svg>
+            </span>
+        );
+    }
+    if (status === 'DELIVERED') {
+        // Grey double ticks
+        const color = isLight ? 'rgba(255,255,255,0.7)' : '#93A3AF';
+        return (
+            <span className={baseClass} title="Delivered">
+                <svg width="16" height="11" viewBox="0 0 16 11" fill="none">
+                    <path d="M11.071 0.653l-5.657 5.657-1.414-1.414L3.293 5.603l2.121 2.121 6.364-6.364.707.707-7.071 7.071L1.172 4.896l1.414-1.414 1.414 1.414L9.657 0.653l1.414 0z" fill={color}/>
+                    <path d="M14.071 0.653l-5.657 5.657-.707-.707 5.657-5.657.707.707z" fill={color}/>
+                </svg>
+            </span>
+        );
+    }
+    if (status === 'FAILED') {
+        const color = isLight ? '#FF6B6B' : '#EF4444';
+        return (
+            <span className={baseClass} title="Failed">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <circle cx="6" cy="6" r="5.5" stroke={color}/>
+                    <path d="M6 3v4" stroke={color} strokeLinecap="round"/>
+                    <circle cx="6" cy="9" r="0.5" fill={color}/>
+                </svg>
+            </span>
+        );
+    }
+    // SENT — single grey tick
+    const color = isLight ? 'rgba(255,255,255,0.7)' : '#93A3AF';
+    return (
+        <span className={baseClass} title="Sent">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                <path d="M9.071 0.653L3.414 6.31 1.293 4.189l.707-.707 1.414 1.414L8.364.653l.707 0z" fill={color}/>
+            </svg>
+        </span>
+    );
+};
 
 interface LeadInfo {
     id: string;
@@ -135,10 +187,22 @@ export default function ConversationsPage() {
             });
         };
 
+        // Handle real-time message status updates (delivered, read)
+        const handleStatusUpdate = (data: { messageId: string; leadId: string; status: string }) => {
+            console.log('Received message_status_update:', data);
+            setMessages(prev => prev.map(msg =>
+                msg.id === data.messageId
+                    ? { ...msg, status: data.status as Message['status'] }
+                    : msg
+            ));
+        };
+
         socketRef.current.on('new_message', handleNewMessage);
+        socketRef.current.on('message_status_update', handleStatusUpdate);
 
         return () => {
             socketRef.current?.off('new_message', handleNewMessage);
+            socketRef.current?.off('message_status_update', handleStatusUpdate);
         };
     }, [selectedId]);
 
@@ -199,6 +263,7 @@ export default function ConversationsPage() {
                     content: replyText,
                     sender: 'ADMIN',
                     timestamp: new Date().toISOString(),
+                    status: 'SENT',
                 }]);
                 setReplyText('');
                 setAiSuggestion('');
@@ -344,8 +409,8 @@ export default function ConversationsPage() {
                                         {conv.customerName && (
                                             <div className="text-xs text-gray-400">{formatPhone(conv.customerPhone)}</div>
                                         )}
-                                        <p className={`text-xs truncate mt-0.5 ${conv.unreadCount > 0 ? 'font-medium text-gray-900' : 'text-gray-500'}`}>
-                                            {conv.lastMessageSender === 'CUSTOMER' ? '' : '✓ '}
+                                        <p className={`text-xs truncate mt-0.5 flex items-center gap-0.5 ${conv.unreadCount > 0 ? 'font-medium text-gray-900' : 'text-gray-500'}`}>
+                                            {conv.lastMessageSender !== 'CUSTOMER' && <MessageTicks status={conv.lastMessageSender ? 'SENT' : undefined} />}
                                             {conv.lastMessage}
                                         </p>
                                     </div>
@@ -418,8 +483,9 @@ export default function ConversationsPage() {
                                                 </span>
                                             </div>
                                             <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                                            <p className={`text-[10px] mt-1 ${msg.sender === 'CUSTOMER' ? 'text-gray-400' : 'text-white/60'}`}>
+                                            <p className={`text-[10px] mt-1 flex items-center justify-end gap-0.5 ${msg.sender === 'CUSTOMER' ? 'text-gray-400' : 'text-white/60'}`}>
                                                 {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                {msg.sender !== 'CUSTOMER' && <MessageTicks status={msg.status || 'SENT'} isLight={true} />}
                                             </p>
                                         </div>
                                     </div>
