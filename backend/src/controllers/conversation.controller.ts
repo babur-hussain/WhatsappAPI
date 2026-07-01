@@ -213,15 +213,16 @@ export const sendReply = catchAsync(async (req: AuthRequest, res: Response) => {
     const lead = await prisma.lead.findFirst({ where: { id: leadId, factoryId } });
     if (!lead) return res.status(404).json(errorResponse('Conversation not found'));
 
-    // Send via WhatsApp
-    const sendResult = await whatsappService.sendTextMessage(factoryId, lead.customerPhone, message);
-    
-    // Try to capture the WhatsApp message ID for delivery tracking
+    // Send via WhatsApp - wrap in try/catch so message is still stored even if WA fails
     let whatsappMessageId: string | undefined;
+    let sendError: string | null = null;
     try {
+        const sendResult = await whatsappService.sendTextMessage(factoryId, lead.customerPhone, message);
         whatsappMessageId = sendResult?.messages?.[0]?.id || undefined;
-    } catch (e) {
-        // Non-critical: wamid extraction failed, message still sent
+    } catch (err: any) {
+        console.error('WhatsApp send failed:', err.message);
+        sendError = err.message;
+        // Don't throw - still store the message locally
     }
 
     // Store in conversation history
@@ -233,6 +234,11 @@ export const sendReply = catchAsync(async (req: AuthRequest, res: Response) => {
         timestamp: new Date(),
         whatsappMessageId,
     });
+
+    if (sendError) {
+        // Message stored but WhatsApp delivery failed
+        return res.status(200).json(successResponse({ ...stored, sendError }));
+    }
 
     res.status(200).json(successResponse(stored));
 });
