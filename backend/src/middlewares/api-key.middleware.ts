@@ -90,7 +90,7 @@ export const verifyApiKey = async (req: ApiKeyRequest, res: Response, next: Next
             // Build the string to sign: timestamp + HTTP method + path + raw body
             const method = req.method.toUpperCase();
             const path = req.originalUrl;
-            const bodyStr = req.body ? JSON.stringify(req.body) : '';
+            const bodyStr = (req.body && Object.keys(req.body).length > 0) ? JSON.stringify(req.body) : '';
             const stringToSign = `${timestamp}${method}${path}${bodyStr}`;
 
             const expectedSignature = crypto
