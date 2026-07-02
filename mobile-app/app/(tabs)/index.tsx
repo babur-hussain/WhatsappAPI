@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl, StatusBar, TextInput, ScrollView, Image } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -119,7 +120,6 @@ export default function ConversationsScreen() {
         };
 
         if (user) {
-            fetchConversations();
             setupSocket();
         } else {
             setLoading(false);
@@ -129,6 +129,14 @@ export default function ConversationsScreen() {
             if (socket) socket.disconnect();
         };
     }, [user]);
+
+    useFocusEffect(
+        useCallback(() => {
+            if (user) {
+                fetchConversations();
+            }
+        }, [user])
+    );
 
     // Live filtering logic
     useEffect(() => {
