@@ -169,18 +169,7 @@ export default function ChatScreen() {
         return res.data.data;
     };
 
-    const handlePickImage = async () => {
-        const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== 'granted') {
-            Alert.alert('Permission needed', 'Sorry, we need camera permissions to make this work!');
-            return;
-        }
-
-        const result = await ImagePicker.launchCameraAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            quality: 0.8,
-        });
-
+    const processImageResult = async (result: ImagePicker.ImagePickerResult) => {
         if (!result.canceled && result.assets && result.assets.length > 0) {
             const asset = result.assets[0];
             const fileName = asset.uri.split('/').pop() || 'image.jpg';
@@ -209,6 +198,49 @@ export default function ChatScreen() {
                 setSending(false);
             }
         }
+    };
+
+    const handlePickImage = () => {
+        Alert.alert(
+            'Select Media',
+            'Choose an option',
+            [
+                {
+                    text: 'Take Photo',
+                    onPress: async () => {
+                        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+                        if (status !== 'granted') {
+                            Alert.alert('Permission needed', 'Sorry, we need camera permissions to make this work!');
+                            return;
+                        }
+                        const result = await ImagePicker.launchCameraAsync({
+                            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                            quality: 0.8,
+                        });
+                        processImageResult(result);
+                    }
+                },
+                {
+                    text: 'Choose from Gallery',
+                    onPress: async () => {
+                        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                        if (status !== 'granted') {
+                            Alert.alert('Permission needed', 'Sorry, we need gallery permissions to make this work!');
+                            return;
+                        }
+                        const result = await ImagePicker.launchImageLibraryAsync({
+                            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                            quality: 0.8,
+                        });
+                        processImageResult(result);
+                    }
+                },
+                {
+                    text: 'Cancel',
+                    style: 'cancel'
+                }
+            ]
+        );
     };
 
     const handlePickDocument = async () => {
