@@ -108,31 +108,6 @@ export class TemplateService {
             throw new Error('Could not determine Facebook App ID from access token. Please check your WhatsApp configuration.');
         }
 
-        // Step 2: Create an upload session
-        const sessionRes = await fetch(
-            `https://graph.facebook.com/${this.API_VERSION}/${appId}/uploads`,
-            {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    file_length: format === 'IMAGE' ? 67 : 1024, // small sample
-                    file_type: mimeType,
-                }),
-            }
-        );
-
-        const sessionData = await sessionRes.json();
-
-        if (!sessionData.id) {
-            logger.error(`Upload session creation failed: ${JSON.stringify(sessionData)}`);
-            throw new Error(`Failed to create upload session: ${sessionData?.error?.message || 'Unknown error'}`);
-        }
-
-        const uploadSessionId = sessionData.id;
-
         // Step 3: Create a minimal valid sample file and upload it
         let fileBuffer: Buffer;
         if (format === 'IMAGE') {
@@ -159,6 +134,31 @@ export class TemplateService {
                 'utf-8'
             );
         }
+
+        // Step 2: Create an upload session
+        const sessionRes = await fetch(
+            `https://graph.facebook.com/${this.API_VERSION}/${appId}/uploads`,
+            {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    file_length: fileBuffer.length,
+                    file_type: mimeType,
+                }),
+            }
+        );
+
+        const sessionData = await sessionRes.json();
+
+        if (!sessionData.id) {
+            logger.error(`Upload session creation failed: ${JSON.stringify(sessionData)}`);
+            throw new Error(`Failed to create upload session: ${sessionData?.error?.message || 'Unknown error'}`);
+        }
+
+        const uploadSessionId = sessionData.id;
 
         // Step 4: Upload the file (convert Buffer to Uint8Array for fetch compatibility)
         const uploadRes = await fetch(
