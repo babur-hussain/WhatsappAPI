@@ -126,5 +126,5 @@ export const updateWhatsappProfile = catchAsync(async (req: any, res: Response) 
 
     await whatsappService.updateBusinessProfile(factoryId, dataToUpdate);
     
-    return res.status(200).json(successResponse(null, 'WhatsApp Business Profile updated successfully'));
+    return res.status(200).json(successResponse(null));
 });
