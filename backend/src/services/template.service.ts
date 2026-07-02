@@ -171,7 +171,7 @@ export class TemplateService {
                     'Content-Type': mimeType,
                     'Content-Length': fileBuffer.length.toString(),
                 },
-                body: fileBuffer,
+                body: new Uint8Array(fileBuffer),
             }
         );
 
