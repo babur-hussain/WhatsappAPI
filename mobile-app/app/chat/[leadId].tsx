@@ -220,17 +220,21 @@ export default function ChatScreen() {
 
             if (!result.canceled && result.assets && result.assets.length > 0) {
                 const doc = result.assets[0];
+                const mimeType = doc.mimeType || 'application/octet-stream';
+                const isImage = mimeType.startsWith('image/');
+                const mediaType = isImage ? 'image' : 'document';
+                
                 setSending(true);
                 try {
-                    const uploadRes = await uploadMedia(doc.uri, doc.name, doc.mimeType || 'application/octet-stream');
+                    const uploadRes = await uploadMedia(doc.uri, doc.name, mimeType);
                     await apiClient.post(`/conversations/${leadId}/reply`, {
                         mediaUrl: uploadRes.url,
-                        mediaType: 'document'
+                        mediaType: mediaType
                     });
                     
                     const mockMsg = {
                         id: Math.random().toString(),
-                        content: `[Media: document] ${uploadRes.url}`,
+                        content: `[Media: ${mediaType}] ${uploadRes.url}`,
                         sender: 'ADMIN',
                         status: 'SENT',
                         timestamp: new Date().toISOString()
@@ -238,7 +242,7 @@ export default function ChatScreen() {
                     setMessages((prev) => [mockMsg, ...prev]);
                 } catch (error) {
                     console.error(error);
-                    Alert.alert('Error', 'Failed to send document');
+                    Alert.alert('Error', `Failed to send ${mediaType}`);
                 } finally {
                     setSending(false);
                 }
@@ -276,9 +280,20 @@ export default function ChatScreen() {
         const isSentByUs = item.sender === 'ADMIN' || item.sender === 'BOT';
         const time = new Date(item.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
 
-        const isImage = item.content && item.content.startsWith('[Media: image]');
-        const isDocument = item.content && item.content.startsWith('[Media: document]');
-        const mediaUrl = (isImage || isDocument) ? item.content.split('] ')[1] : null;
+        let mediaUrl = null;
+        let textContent = item.content || '';
+
+        const mediaMatch = textContent.match(/^\[Media: (image|document|video|audio)\] (https?:\/\/[^\s]+)(?:\n([\s\S]*))?$/);
+        const isImage = mediaMatch ? mediaMatch[1] === 'image' : textContent.startsWith('[Media: image]');
+        const isDocument = mediaMatch ? mediaMatch[1] !== 'image' : textContent.startsWith('[Media: document]');
+
+        if (mediaMatch) {
+            mediaUrl = mediaMatch[2];
+            textContent = mediaMatch[3] || '';
+        } else if (isImage || isDocument) {
+            mediaUrl = textContent.split('] ')[1]?.trim();
+            textContent = '';
+        }
 
         return (
             <View className={`flex-row mb-1 px-3 ${isSentByUs ? 'justify-end' : 'justify-start'}`}>
@@ -289,9 +304,8 @@ export default function ChatScreen() {
                         shadowOpacity: 0.1,
                         shadowRadius: 1,
                         elevation: 1,
-                        flexDirection: 'row',
-                        flexWrap: 'wrap',
-                        alignItems: 'flex-end',
+                        flexDirection: 'column',
+                        alignItems: isImage ? 'center' : 'flex-start',
                         padding: isImage ? 4 : undefined,
                     }}
                     className={`max-w-[85%] ${!isImage && 'px-2.5 py-1.5'} rounded-xl ${
@@ -301,34 +315,34 @@ export default function ChatScreen() {
                     }`}
                 >
                     {isImage ? (
-                        <View>
-                            <ImageBackground 
-                                source={{ uri: mediaUrl }} 
-                                style={{ width: 220, height: 220, overflow: 'hidden', borderRadius: 8 }}
-                                resizeMode="cover"
-                            />
-                        </View>
+                        <Image source={{ uri: mediaUrl }} style={{ width: 220, height: 220, borderRadius: 8, backgroundColor: '#e5e7eb' }} resizeMode="cover" />
                     ) : isDocument ? (
-                        <View className="flex-row items-center bg-black/5 rounded-lg p-3 mb-1 mr-8 w-full max-w-[200px]">
-                            <Ionicons name="document-text" size={32} color="#8696A0" />
-                            <Text className="text-[#111B21] text-sm ml-2 flex-1" numberOfLines={1}>Document Attached</Text>
+                        <View className="flex-row items-center bg-gray-100 p-2 rounded-lg mb-1 w-48">
+                            <Ionicons name="document-text" size={24} color="#666" />
+                            <Text className="ml-2 flex-1 text-gray-700 font-medium truncate">Document</Text>
+                        </View>
+                    ) : null}
+                    
+                    {(textContent || (!isImage && !isDocument)) ? (
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', marginTop: (isImage && textContent) ? 4 : 0 }}>
+                            <Text className="text-[#111B21] text-[16px] leading-[22px]">
+                                {textContent || item.content}
+                            </Text>
+                            <View className="flex-row items-center ml-2" style={{ marginTop: 2 }}>
+                                <Text className="text-[#667781] text-[11px] leading-[15px]">
+                                    {time}
+                                </Text>
+                                {renderTicks(item)}
+                            </View>
                         </View>
                     ) : (
-                        <Text className="text-[#111B21] text-[16px] leading-[22px]" style={{ marginRight: 8 }}>
-                            {item.content}
-                        </Text>
-                    )}
-                    
-                    <View className={`flex-row items-center ${isImage ? 'absolute bottom-1.5 right-1.5 bg-black/40 px-1.5 py-0.5 rounded-full' : ''}`} style={{ marginLeft: 'auto', marginBottom: isImage ? 0 : -2 }}>
-                        <Text className={`${isImage ? 'text-white' : 'text-[#667781]'} text-[10.5px]`}>
-                            {time}
-                        </Text>
-                        {isImage ? (
-                            <Text style={{ marginLeft: 4, marginTop: -2 }}>
-                                {renderTicks(item)}
+                        <View className="flex-row items-center mt-1 self-end" style={{ marginRight: 4, marginBottom: 2 }}>
+                            <Text className="text-[#667781] text-[11px] leading-[15px]">
+                                {time}
                             </Text>
-                        ) : renderTicks(item)}
-                    </View>
+                            {renderTicks(item)}
+                        </View>
+                    )}
                 </View>
             </View>
         );
