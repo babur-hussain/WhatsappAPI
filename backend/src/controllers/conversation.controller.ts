@@ -223,9 +223,11 @@ export const sendReply = catchAsync(async (req: AuthRequest, res: Response) => {
     if (!factoryId && !isSuperAdmin) return res.status(401).json(errorResponse('Unauthorized'));
 
     const leadId = req.params.leadId;
-    const { message } = req.body;
+    const { message, mediaUrl, mediaType } = req.body;
 
-    if (!message) return res.status(400).json(errorResponse('Message is required'));
+    if (!message && !mediaUrl) {
+        return res.status(400).json(errorResponse('Message or media is required'));
+    }
 
     const leadWhere: any = { id: leadId };
     if (factoryId) leadWhere.factoryId = factoryId;
@@ -236,9 +238,17 @@ export const sendReply = catchAsync(async (req: AuthRequest, res: Response) => {
     // Send via WhatsApp - wrap in try/catch so message is still stored even if WA fails
     let whatsappMessageId: string | undefined;
     let sendError: string | null = null;
+    let content = message || '';
+
     try {
-        const sendResult = await whatsappService.sendTextMessage(lead.factoryId, lead.customerPhone, message);
-        whatsappMessageId = sendResult?.messages?.[0]?.id || undefined;
+        if (mediaUrl && mediaType) {
+            const sendResult = await whatsappService.sendMediaMessage(lead.factoryId, lead.customerPhone, mediaUrl, mediaType, message);
+            whatsappMessageId = sendResult?.messages?.[0]?.id || undefined;
+            content = message ? `[Media: ${mediaType}] ${mediaUrl}\n${message}` : `[Media: ${mediaType}] ${mediaUrl}`;
+        } else {
+            const sendResult = await whatsappService.sendTextMessage(lead.factoryId, lead.customerPhone, message);
+            whatsappMessageId = sendResult?.messages?.[0]?.id || undefined;
+        }
     } catch (err: any) {
         console.error('WhatsApp send failed:', err.message);
         sendError = err.message;
@@ -249,7 +259,7 @@ export const sendReply = catchAsync(async (req: AuthRequest, res: Response) => {
     const stored = await leadService.processOutgoingMessage({
         leadId,
         factoryId: lead.factoryId,
-        content: message,
+        content,
         sender: SenderType.ADMIN,
         timestamp: new Date(),
         whatsappMessageId,

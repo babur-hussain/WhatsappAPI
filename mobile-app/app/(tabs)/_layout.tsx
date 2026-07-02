@@ -55,10 +55,10 @@ export default function TabLayout() {
         options={{
           title: 'Chats',
           tabBarIcon: ({ focused, color }) => (
-            <View className={`px-5 py-1 rounded-full ${focused ? 'bg-[#D8FDD2]' : 'bg-transparent'}`}>
-              <MaterialCommunityIcons name={focused ? 'message-text' : 'message-text-outline'} size={24} color={color} />
+            <View className={`w-16 h-8 rounded-full items-center justify-center ${focused ? 'bg-[#D8FDD2]' : 'bg-transparent'}`}>
+              <MaterialCommunityIcons name={focused ? 'message-text' : 'message-text-outline'} size={24} color={focused ? '#111B21' : '#54656F'} />
               {unreadTotal > 0 && (
-                <View className="absolute top-0 right-3 bg-[#25D366] rounded-full min-w-[18px] h-[18px] items-center justify-center border-2 border-white">
+                <View className="absolute top-[-2px] right-2 bg-[#25D366] rounded-full min-w-[18px] h-[18px] items-center justify-center border-2 border-white">
                   <Text className="text-white text-[10px] font-bold">{unreadTotal}</Text>
                 </View>
               )}
@@ -71,8 +71,8 @@ export default function TabLayout() {
         options={{
           title: 'Updates',
           tabBarIcon: ({ focused, color }) => (
-            <View className={`px-5 py-1 rounded-full ${focused ? 'bg-[#D8FDD2]' : 'bg-transparent'}`}>
-                <Ionicons name={focused ? 'aperture' : 'aperture-outline'} size={24} color={color} />
+            <View className={`w-16 h-8 rounded-full items-center justify-center ${focused ? 'bg-[#D8FDD2]' : 'bg-transparent'}`}>
+                <Ionicons name={focused ? 'aperture' : 'aperture-outline'} size={24} color={focused ? '#111B21' : '#54656F'} />
             </View>
           ),
         }}
@@ -82,8 +82,8 @@ export default function TabLayout() {
         options={{
           title: 'Communities',
           tabBarIcon: ({ focused, color }) => (
-            <View className={`px-5 py-1 rounded-full ${focused ? 'bg-[#D8FDD2]' : 'bg-transparent'}`}>
-                <MaterialIcons name={focused ? 'groups' : 'groups'} size={26} color={color} />
+            <View className={`w-16 h-8 rounded-full items-center justify-center ${focused ? 'bg-[#D8FDD2]' : 'bg-transparent'}`}>
+                <MaterialIcons name={focused ? 'groups' : 'groups'} size={26} color={focused ? '#111B21' : '#54656F'} />
             </View>
           ),
         }}
@@ -93,8 +93,8 @@ export default function TabLayout() {
         options={{
           title: 'Calls',
           tabBarIcon: ({ focused, color }) => (
-            <View className={`px-5 py-1 rounded-full ${focused ? 'bg-[#D8FDD2]' : 'bg-transparent'}`}>
-                <Ionicons name={focused ? 'call' : 'call-outline'} size={24} color={color} />
+            <View className={`w-16 h-8 rounded-full items-center justify-center ${focused ? 'bg-[#D8FDD2]' : 'bg-transparent'}`}>
+                <Ionicons name={focused ? 'call' : 'call-outline'} size={24} color={focused ? '#111B21' : '#54656F'} />
             </View>
           ),
         }}
