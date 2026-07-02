@@ -133,9 +133,13 @@ export default function ConversationsScreen() {
                 activeOpacity={0.7}
                 onPress={() => router.push(`/chat/${item.id}`)}
             >
-                <View className={`w-[52px] h-[52px] rounded-full ${avatarColor} items-center justify-center mr-3`}>
-                    <Text className={`${textColor} font-normal text-2xl`}>{initial}</Text>
-                </View>
+                {item.profilePicture ? (
+                    <Image source={{ uri: item.profilePicture }} className="w-[52px] h-[52px] rounded-full mr-3" />
+                ) : (
+                    <View className={`w-[52px] h-[52px] rounded-full ${avatarColor} items-center justify-center mr-3`}>
+                        <Text className={`${textColor} font-normal text-2xl`}>{initial}</Text>
+                    </View>
+                )}
                 
                 <View className="flex-1 justify-center border-b border-slate-100 dark:border-slate-800/60 pb-3 pt-1">
                     <View className="flex-row justify-between items-center mb-1">

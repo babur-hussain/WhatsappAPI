@@ -399,11 +399,15 @@ export default function ChatScreen() {
                             <Ionicons name="arrow-back" size={26} color="#111B21" />
                         </TouchableOpacity>
                         
-                        <View className="w-10 h-10 rounded-full bg-[#CCE5FF] items-center justify-center mr-3">
-                            <Text className="text-[#005C4B] font-medium text-xl">
-                                {lead?.customerName ? lead.customerName.charAt(0).toUpperCase() : lead?.customerPhone ? lead.customerPhone.charAt(0) : '?'}
-                            </Text>
-                        </View>
+                        {lead?.profilePicture ? (
+                            <Image source={{ uri: lead.profilePicture }} className="w-10 h-10 rounded-full mr-3" />
+                        ) : (
+                            <View className="w-10 h-10 rounded-full bg-[#CCE5FF] items-center justify-center mr-3">
+                                <Text className="text-[#005C4B] font-medium text-xl">
+                                    {lead?.customerName ? lead.customerName.charAt(0).toUpperCase() : lead?.customerPhone ? lead.customerPhone.charAt(0) : '?'}
+                                </Text>
+                            </View>
+                        )}
                         <View className="flex-1 justify-center">
                             <Text className="text-[#111B21] font-bold text-[17px] tracking-tight mb-0.5">
                                 {lead?.customerName || lead?.customerPhone || 'Customer'}
