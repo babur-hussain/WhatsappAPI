@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { z } from 'zod';
 import { verifyApiKey, apiRateLimiter, ApiKeyRequest } from '../../middlewares/api-key.middleware';
 import { externalService } from '../../services/external.service';
+import { templateService } from '../../services/template.service';
 import { logger } from '../../config/logger';
 
 const router = Router();
@@ -186,6 +187,24 @@ router.get('/health', async (req: ApiKeyRequest, res: Response) => {
         factoryId: req.factoryId,
         timestamp: new Date().toISOString(),
     });
+});
+
+/**
+ * GET /api/v1/external/templates
+ * Fetch approved WhatsApp templates for the factory.
+ */
+router.get('/templates', async (req: ApiKeyRequest, res: Response) => {
+    try {
+        const result = await templateService.getTemplates(req.factoryId!, { status: 'APPROVED' });
+        // result should have { data: Template[] }
+        return res.json({ success: true, data: result.data });
+    } catch (error: any) {
+        logger.error(`[External API] get-templates error: ${error.message}`);
+        return res.status(500).json({
+            success: false,
+            error: 'Failed to fetch templates',
+        });
+    }
 });
 
 export default router;
