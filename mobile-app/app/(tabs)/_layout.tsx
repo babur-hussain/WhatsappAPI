@@ -78,12 +78,12 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="communities"
+        name="settings"
         options={{
-          title: 'Communities',
+          title: 'Settings',
           tabBarIcon: ({ focused, color }) => (
             <View className={`w-16 h-8 rounded-full items-center justify-center ${focused ? 'bg-[#D8FDD2]' : 'bg-transparent'}`}>
-                <MaterialIcons name={focused ? 'groups' : 'groups'} size={26} color={focused ? '#111B21' : '#54656F'} />
+                <Ionicons name={focused ? 'settings' : 'settings-outline'} size={24} color={focused ? '#111B21' : '#54656F'} />
             </View>
           ),
         }}

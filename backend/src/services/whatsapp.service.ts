@@ -137,6 +137,85 @@ export class WhatsAppService {
         return response.json();
     }
 
+    public async getTemplates(factoryId: string, limit: number = 100): Promise<any> {
+        const { phoneNumberId, accessToken } = await this.getFactoryCredentials(factoryId);
+        
+        // Find WABA ID from phoneNumberId
+        const factory = await prisma.factory.findFirst({
+            where: { whatsappPhoneNumberId: phoneNumberId }
+        });
+        
+        if (!factory || !factory.whatsappBusinessAccountId) {
+            throw new Error('WhatsApp Business Account ID not found');
+        }
+
+        const response = await fetch(`https://graph.facebook.com/v21.0/${factory.whatsappBusinessAccountId}/message_templates?limit=${limit}`, {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+            },
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`Failed to fetch templates: ${response.statusText} - ${errorBody}`);
+        }
+
+        return response.json();
+    }
+
+    /**
+     * Get WhatsApp Business Profile
+     */
+    public async getBusinessProfile(factoryId: string): Promise<any> {
+        const { phoneNumberId, accessToken } = await this.getFactoryCredentials(factoryId);
+        
+        const response = await fetch(`https://graph.facebook.com/v21.0/${phoneNumberId}/whatsapp_business_profile?fields=about,address,description,email,profile_picture_url,websites,vertical`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`Failed to fetch WhatsApp Business Profile: ${response.statusText} - ${errorBody}`);
+        }
+
+        return response.json();
+    }
+
+    /**
+     * Update WhatsApp Business Profile
+     */
+    public async updateBusinessProfile(factoryId: string, data: { about?: string, address?: string, description?: string, email?: string, websites?: string[], vertical?: string }): Promise<any> {
+        const { phoneNumberId, accessToken } = await this.getFactoryCredentials(factoryId);
+        
+        const payload: any = { messaging_product: 'whatsapp' };
+        if (data.about !== undefined) payload.about = data.about;
+        if (data.address !== undefined) payload.address = data.address;
+        if (data.description !== undefined) payload.description = data.description;
+        if (data.email !== undefined) payload.email = data.email;
+        if (data.websites !== undefined) payload.websites = data.websites;
+        if (data.vertical !== undefined) payload.vertical = data.vertical;
+
+        const response = await fetch(`https://graph.facebook.com/v21.0/${phoneNumberId}/whatsapp_business_profile`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`Failed to update WhatsApp Business Profile: ${response.statusText} - ${errorBody}`);
+        }
+
+        return response.json();
+    }
+
     /**
      * Send a template message (required for business-initiated conversations)
      */

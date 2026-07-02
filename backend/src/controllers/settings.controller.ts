@@ -4,6 +4,7 @@ import prisma from '../config/database';
 import catchAsync from '../utils/catch-async';
 import { successResponse, errorResponse } from '../api/dto/response.dto';
 import { v4 as uuidv4 } from 'uuid';
+import { whatsappService } from '../services/whatsapp.service';
 
 export const getApiKey = catchAsync(async (req: AuthRequest, res: Response) => {
     const factoryId = req.user?.factoryId;
@@ -95,4 +96,35 @@ export const updateAutoReplySettings = catchAsync(async (req: AuthRequest, res: 
     });
 
     res.status(200).json(successResponse(factory));
+});
+
+export const getWhatsappProfile = catchAsync(async (req: any, res: Response) => {
+    const factoryId = req.user?.factoryId;
+    if (!factoryId) return res.status(401).json(errorResponse('Unauthorized'));
+
+    const profileResponse = await whatsappService.getBusinessProfile(factoryId);
+    
+    // The response is usually { data: [ { about: '...', address: '...', ... } ] }
+    const profile = profileResponse.data?.[0] || {};
+    
+    return res.status(200).json(successResponse({ profile }));
+});
+
+export const updateWhatsappProfile = catchAsync(async (req: any, res: Response) => {
+    const factoryId = req.user?.factoryId;
+    if (!factoryId) return res.status(401).json(errorResponse('Unauthorized'));
+
+    const { about, address, description, email, websites, vertical } = req.body;
+    
+    const dataToUpdate: any = {};
+    if (about !== undefined) dataToUpdate.about = about;
+    if (address !== undefined) dataToUpdate.address = address;
+    if (description !== undefined) dataToUpdate.description = description;
+    if (email !== undefined) dataToUpdate.email = email;
+    if (websites !== undefined) dataToUpdate.websites = Array.isArray(websites) ? websites : [websites];
+    if (vertical !== undefined) dataToUpdate.vertical = vertical;
+
+    await whatsappService.updateBusinessProfile(factoryId, dataToUpdate);
+    
+    return res.status(200).json(successResponse(null, 'WhatsApp Business Profile updated successfully'));
 });

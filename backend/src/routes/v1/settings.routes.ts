@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getApiKey, regenerateApiKey, updateWebhookConfig, getAutoReplySettings, updateAutoReplySettings } from '../../controllers/settings.controller';
+import { getApiKey, regenerateApiKey, updateWebhookConfig, getAutoReplySettings, updateAutoReplySettings, getWhatsappProfile, updateWhatsappProfile } from '../../controllers/settings.controller';
 import { protect } from '../../middlewares/firebase-auth.middleware';
 
 const router = Router();
@@ -16,5 +16,9 @@ router.route('/webhook')
 router.route('/auto-reply')
     .get(getAutoReplySettings)
     .patch(updateAutoReplySettings);
+
+router.route('/whatsapp-profile')
+    .get(getWhatsappProfile)
+    .post(updateWhatsappProfile);
 
 export default router;
