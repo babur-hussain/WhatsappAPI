@@ -68,7 +68,7 @@ router.post('/send-message', async (req: ApiKeyRequest, res: Response) => {
         logger.error(`[External API] send-message error: ${error.message}`);
         return res.status(500).json({
             success: false,
-            error: 'Failed to send message. Please check your WhatsApp connection.',
+            error: error.message || 'Failed to send message. Please check your WhatsApp connection.',
         });
     }
 });
@@ -105,7 +105,7 @@ router.post('/send-template', async (req: ApiKeyRequest, res: Response) => {
         logger.error(`[External API] send-template error: ${error.message}`);
         return res.status(500).json({
             success: false,
-            error: 'Failed to send template message. Please check your WhatsApp connection.',
+            error: error.message || 'Failed to send template message. Please check your WhatsApp connection.',
         });
     }
 });
@@ -141,7 +141,7 @@ router.post('/send-document', async (req: ApiKeyRequest, res: Response) => {
         logger.error(`[External API] send-document error: ${error.message}`);
         return res.status(500).json({
             success: false,
-            error: 'Failed to send document. Please check your WhatsApp connection.',
+            error: error.message || 'Failed to send document. Please check your WhatsApp connection.',
         });
     }
 });
