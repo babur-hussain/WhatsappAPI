@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, StatusBar, Keyboard, Alert, ImageBackground, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, StatusBar, Keyboard, Alert, ImageBackground, Image, Modal } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import io, { Socket } from 'socket.io-client';
@@ -18,6 +18,7 @@ export default function ChatScreen() {
     const [inputText, setInputText] = useState('');
     const [sending, setSending] = useState(false);
     const [keyboardHeight, setKeyboardHeight] = useState(0);
+    const [fullScreenMedia, setFullScreenMedia] = useState<{url: string, type: string} | null>(null);
     const socketRef = useRef<Socket | null>(null);
     const router = useRouter();
     const flatListRef = useRef<FlatList>(null);
@@ -347,7 +348,9 @@ export default function ChatScreen() {
                     }`}
                 >
                     {isImage ? (
-                        <Image source={{ uri: mediaUrl }} style={{ width: 220, height: 220, borderRadius: 8, backgroundColor: '#e5e7eb' }} resizeMode="cover" />
+                        <TouchableOpacity activeOpacity={0.9} onPress={() => setFullScreenMedia({ url: mediaUrl!, type: 'image' })}>
+                            <Image source={{ uri: mediaUrl }} style={{ width: 220, height: 220, borderRadius: 8, backgroundColor: '#e5e7eb' }} resizeMode="cover" />
+                        </TouchableOpacity>
                     ) : isDocument ? (
                         <View className="flex-row items-center bg-gray-100 p-2 rounded-lg mb-1 w-48">
                             <Ionicons name="document-text" size={24} color="#666" />
@@ -488,6 +491,26 @@ export default function ChatScreen() {
                     </View>
                 </View>
             </KeyboardAvoidingView>
+
+            {/* Full Screen Media Modal */}
+            <Modal visible={!!fullScreenMedia} transparent={true} animationType="fade" onRequestClose={() => setFullScreenMedia(null)}>
+                <View className="flex-1 bg-black justify-center items-center">
+                    <TouchableOpacity 
+                        style={{ position: 'absolute', top: Math.max(insets.top, 20), left: 20, zIndex: 10, padding: 10 }} 
+                        onPress={() => setFullScreenMedia(null)}
+                    >
+                        <Ionicons name="close" size={30} color="white" />
+                    </TouchableOpacity>
+                    
+                    {fullScreenMedia?.type === 'image' && (
+                        <Image 
+                            source={{ uri: fullScreenMedia.url }} 
+                            style={{ width: '100%', height: '100%' }} 
+                            resizeMode="contain" 
+                        />
+                    )}
+                </View>
+            </Modal>
         </View>
     );
 }
