@@ -8,6 +8,8 @@ import prisma from '../config/database';
 import catchAsync from '../utils/catch-async';
 import { decrypt } from '../utils/crypto.util';
 import { pushService } from '../services/push.service';
+import { whatsappService } from '../services/whatsapp.service';
+import { storageService } from '../services/storage.service';
 
 /**
  * Fetch the WhatsApp profile picture URL for a given phone number using Meta Cloud API.
@@ -55,6 +57,9 @@ export const receiveWebhook = catchAsync(async (req: Request, res: Response) => 
 
     // Check if this is an event from a WhatsApp API
     if (body.object) {
+        // Acknowledge immediately to prevent Meta from timing out and retrying
+        res.sendStatus(200);
+
         if (
             body.entry &&
             body.entry[0].changes &&
@@ -72,7 +77,6 @@ export const receiveWebhook = catchAsync(async (req: Request, res: Response) => 
             const businessPhoneNumber = metadata.display_phone_number;
             const phoneNumberId: string = metadata.phone_number_id;
             const customerPhone = message.from; // Sender phone number
-            const messageText = message.text?.body || '[Media message]';
             const timestamp = new Date(parseInt(message.timestamp) * 1000);
 
             // Find the factory by the WhatsApp number or Phone Number ID
@@ -87,7 +91,45 @@ export const receiveWebhook = catchAsync(async (req: Request, res: Response) => 
 
             if (!factory) {
                 console.warn(`Webhook received for unknown business number: ${businessPhoneNumber}`);
-                return res.sendStatus(404);
+                return;
+            }
+
+            let messageText = message.text?.body || '';
+            let mediaType: string | null = null;
+            let mediaId: string | null = null;
+            let caption = '';
+
+            if (message.type === 'image') {
+                mediaType = 'image';
+                mediaId = message.image?.id;
+                caption = message.image?.caption || '';
+            } else if (message.type === 'document') {
+                mediaType = 'document';
+                mediaId = message.document?.id;
+                caption = message.document?.caption || '';
+            } else if (message.type === 'video') {
+                mediaType = 'video';
+                mediaId = message.video?.id;
+                caption = message.video?.caption || '';
+            } else if (message.type === 'audio') {
+                mediaType = 'audio';
+                mediaId = message.audio?.id;
+                caption = '';
+            }
+
+            if (mediaId && factory.whatsappAccessToken) {
+                try {
+                    const accessToken = decrypt(factory.whatsappAccessToken);
+                    const { url, mimeType } = await whatsappService.getMediaUrl(mediaId, accessToken);
+                    const buffer = await whatsappService.downloadMedia(url, accessToken);
+                    const uploadResult = await storageService.uploadBuffer(buffer, mimeType, factory.id, 'media');
+                    messageText = caption ? `[Media: ${mediaType}] ${uploadResult.url}\n${caption}` : `[Media: ${mediaType}] ${uploadResult.url}`;
+                } catch (error) {
+                    console.error('Failed to process incoming media:', error);
+                    messageText = `[Media message - Failed to download]`;
+                }
+            } else if (!messageText) {
+                messageText = `[Unsupported message type: ${message.type}]`;
             }
 
             // Process the message (create/update lead and store message)
@@ -332,7 +374,7 @@ export const receiveWebhook = catchAsync(async (req: Request, res: Response) => 
             }
         }
 
-        res.sendStatus(200);
+        // 200 OK was already sent at the start of the object block
     } else {
         res.sendStatus(404);
     }

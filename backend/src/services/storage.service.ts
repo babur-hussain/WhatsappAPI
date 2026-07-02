@@ -77,6 +77,36 @@ export class StorageService {
     }
 
     /**
+     * Upload raw binary buffer to S3
+     */
+    public async uploadBuffer(
+        buffer: Buffer,
+        mimetype: string,
+        factoryId: string,
+        folder: UploadFolder = 'media',
+    ): Promise<{ url: string; key: string }> {
+        if (!this.bucketName) throw new Error('AWS_S3_BUCKET is not configured');
+
+        // Map common mimetypes to extensions
+        let extension = '';
+        if (mimetype === 'image/jpeg') extension = '.jpg';
+        else if (mimetype === 'image/png') extension = '.png';
+        else if (mimetype === 'image/webp') extension = '.webp';
+        else if (mimetype === 'application/pdf') extension = '.pdf';
+        else if (mimetype === 'video/mp4') extension = '.mp4';
+        else if (mimetype === 'audio/mpeg') extension = '.mp3';
+        else if (mimetype === 'audio/ogg') extension = '.ogg';
+        else if (mimetype.startsWith('image/')) extension = '.jpg';
+        else if (mimetype.startsWith('video/')) extension = '.mp4';
+        else if (mimetype.startsWith('audio/')) extension = '.mp3';
+        else extension = '.bin';
+
+        const key = `${folder}/${factoryId}/${uuidv4()}${extension}`;
+        const url = await this._upload(buffer, key, mimetype);
+        return { url, key };
+    }
+
+    /**
      * Internal helper that performs the actual S3 PutObject command and returns the public URL.
      */
     private async _upload(body: Buffer, key: string, contentType: string): Promise<string> {

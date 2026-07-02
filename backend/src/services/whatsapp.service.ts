@@ -206,6 +206,43 @@ export class WhatsAppService {
             };
         }
     }
+
+    /**
+     * Get the download URL for a media ID from Meta
+     */
+    public async getMediaUrl(mediaId: string, accessToken: string): Promise<{ url: string; mimeType: string }> {
+        const response = await fetch(`https://graph.facebook.com/v21.0/${mediaId}`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` },
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to fetch media metadata: ${errorText}`);
+        }
+
+        const data = await response.json();
+        return {
+            url: data.url,
+            mimeType: data.mime_type,
+        };
+    }
+
+    /**
+     * Download binary data from a Meta media URL
+     */
+    public async downloadMedia(url: string, accessToken: string): Promise<Buffer> {
+        const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${accessToken}` },
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to download media: ${errorText}`);
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        return Buffer.from(arrayBuffer);
+    }
 }
 
 export const whatsappService = new WhatsAppService();
