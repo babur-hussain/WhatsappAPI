@@ -169,8 +169,9 @@ export class TemplateService {
                     Authorization: `OAuth ${accessToken}`,
                     file_offset: '0',
                     'Content-Type': mimeType,
+                    'Content-Length': fileBuffer.length.toString(),
                 },
-                body: new Uint8Array(fileBuffer),
+                body: fileBuffer,
             }
         );
 
@@ -178,7 +179,7 @@ export class TemplateService {
 
         if (!uploadData.h) {
             logger.error(`File upload failed: ${JSON.stringify(uploadData)}`);
-            throw new Error(`Failed to upload sample media: ${uploadData?.error?.message || 'Unknown error'}`);
+            throw new Error(`Failed to upload sample media: ${JSON.stringify(uploadData)}`);
         }
 
         logger.info(`Sample media uploaded successfully for ${format} header, handle: ${uploadData.h.substring(0, 20)}...`);
