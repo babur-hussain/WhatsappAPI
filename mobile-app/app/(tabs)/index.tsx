@@ -119,6 +119,51 @@ export default function ConversationsScreen() {
         }
     };
 
+    const renderLastMessageContent = (message: string, unread: boolean) => {
+        if (!message) return <Text className="text-slate-500 dark:text-slate-400 text-[15px]" numberOfLines={1} style={{ flexShrink: 1 }}>Tap to chat</Text>;
+        
+        const textClass = `${unread ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-500 dark:text-slate-400'} text-[15px]`;
+
+        if (message.startsWith('[Media:')) {
+            const mediaRegex = /^\[Media: (image|document|video|audio)\] (https?:\/\/[^\s]+)(?:\n([\s\S]*))?$/;
+            const match = message.match(mediaRegex);
+            
+            if (match) {
+                const type = match[1];
+                const caption = match[3] ? match[3].trim() : '';
+                
+                let iconName = 'image';
+                let typeName = 'Photo';
+                
+                if (type === 'document') {
+                    iconName = 'document-text';
+                    typeName = 'Document';
+                } else if (type === 'video') {
+                    iconName = 'videocam';
+                    typeName = 'Video';
+                } else if (type === 'audio') {
+                    iconName = 'headset';
+                    typeName = 'Audio';
+                }
+                
+                return (
+                    <View className="flex-row items-center flex-1 overflow-hidden">
+                        <Ionicons name={iconName as any} size={15} color="#8696A0" style={{ marginRight: 4 }} />
+                        <Text className={textClass} numberOfLines={1} style={{ flexShrink: 1 }}>
+                            {typeName}{caption ? ` ${caption}` : ''}
+                        </Text>
+                    </View>
+                );
+            }
+        }
+        
+        return (
+            <Text className={textClass} numberOfLines={1} style={{ flexShrink: 1 }}>
+                {message}
+            </Text>
+        );
+    };
+
     const renderItem = ({ item }: { item: any }) => {
         const name = item.customerName || item.customerPhone;
         const initial = name.charAt(0).toUpperCase();
@@ -161,9 +206,7 @@ export default function ConversationsScreen() {
                                     style={{ marginRight: 4 }} 
                                 />
                             )}
-                            <Text className={`${unread ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-500 dark:text-slate-400'} text-[15px]`} numberOfLines={1}>
-                                {item.lastMessage || 'Tap to chat'}
-                            </Text>
+                            {renderLastMessageContent(item.lastMessage, unread)}
                         </View>
                         {unread && (
                             <View className="bg-[#25D366] rounded-full min-w-[20px] h-[20px] items-center justify-center px-1.5">
