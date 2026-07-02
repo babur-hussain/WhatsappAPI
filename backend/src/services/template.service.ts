@@ -160,7 +160,9 @@ export class TemplateService {
 
         const uploadSessionId = sessionData.id;
 
-        // Step 4: Upload the file (convert Buffer to Uint8Array for fetch compatibility)
+        const blob = new Blob([fileBuffer], { type: mimeType });
+
+        // Step 4: Upload the file
         const uploadRes = await fetch(
             `https://graph.facebook.com/${this.API_VERSION}/${uploadSessionId}`,
             {
@@ -168,10 +170,8 @@ export class TemplateService {
                 headers: {
                     Authorization: `OAuth ${accessToken}`,
                     file_offset: '0',
-                    'Content-Type': mimeType,
-                    'Content-Length': fileBuffer.length.toString(),
                 },
-                body: new Uint8Array(fileBuffer),
+                body: blob,
             }
         );
 
