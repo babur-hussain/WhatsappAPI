@@ -24,6 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface FactorySettings {
     apiKey: string | null;
+    apiSecret: string | null;
     webhookUrl: string | null;
     webhookSecret: string | null;
 }
@@ -104,14 +105,24 @@ export default function SettingsPage() {
         if (!confirm('Are you sure? This will invalidate your current API key.')) return;
         setRegenerating(true);
         try {
-            const res = await fetch(`${API_BASE}/api/v1/settings/api-key/regenerate`, {
-                method: 'POST',
-                headers: getHeaders(),
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setSettings(prev => prev ? { ...prev, apiKey: data.data.apiKey } : prev);
-                toast({ title: 'API Key Regenerated', description: 'Your new API key is active now.' });
+            const [keyRes, secretRes] = await Promise.all([
+                fetch(`${API_BASE}/api/v1/settings/api-key`, { method: 'POST', headers: getHeaders() }),
+                fetch(`${API_BASE}/api/v1/settings/api-secret/regenerate`, { method: 'POST', headers: getHeaders() })
+            ]);
+
+            if (keyRes.ok && secretRes.ok) {
+                const keyData = await keyRes.json();
+                const secretData = await secretRes.json();
+                
+                setSettings(prev => prev ? { 
+                    ...prev, 
+                    apiKey: keyData.data.apiKey, 
+                    apiSecret: secretData.data.apiSecret 
+                } : prev);
+                
+                toast({ title: 'API Keys Regenerated', description: 'Your new API key and secret are active now. Keep your secret safe.' });
+            } else {
+                throw new Error('Failed to regenerate one or more keys');
             }
         } catch (e) {
             toast({ title: 'Error', description: 'Failed to regenerate API key', variant: 'destructive' });
@@ -173,8 +184,8 @@ export default function SettingsPage() {
                             <Key className="w-5 h-5 text-indigo-600" />
                         </div>
                         <div>
-                            <h3 className="font-bold text-slate-900">API Key</h3>
-                            <p className="text-xs text-slate-500">Use this key to authenticate external API requests from n8n, Zapier, or custom integrations.</p>
+                            <h3 className="font-bold text-slate-900">API Credentials</h3>
+                            <p className="text-xs text-slate-500">Use this key and secret to authenticate external API requests from n8n, Zapier, or custom integrations.</p>
                         </div>
                     </div>
                     <div className="p-6 space-y-4">
@@ -190,13 +201,27 @@ export default function SettingsPage() {
                                     {copiedField === 'apiKey' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-500" />}
                                 </button>
                             )}
+                        </div>
+
+                        <div className="flex items-center gap-3 mt-4">
+                            <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-mono text-sm text-slate-700 truncate select-all">
+                                {settings?.apiSecret ? '••••••••••••••••••••••••••••••••' : 'No API secret generated'}
+                            </div>
+                            {settings?.apiSecret && (
+                                <button
+                                    onClick={() => copyToClipboard(settings.apiSecret!, 'apiSecret')}
+                                    className="p-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition shrink-0"
+                                >
+                                    {copiedField === 'apiSecret' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-500" />}
+                                </button>
+                            )}
                             <button
                                 onClick={handleRegenerateKey}
                                 disabled={regenerating}
                                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-50 shrink-0"
                             >
                                 {regenerating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                                {settings?.apiKey ? 'Regenerate' : 'Generate'}
+                                {settings?.apiKey ? 'Regenerate Keys' : 'Generate Keys'}
                             </button>
                         </div>
                     </div>
