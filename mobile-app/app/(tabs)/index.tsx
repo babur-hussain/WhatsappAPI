@@ -6,6 +6,8 @@ import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import io, { Socket } from 'socket.io-client';
+import * as SecureStore from 'expo-secure-store';
 
 const CACHE_KEY_CONVERSATIONS = 'offline_conversations';
 
@@ -34,6 +36,14 @@ export default function ConversationsScreen() {
             const res = await apiClient.get('/conversations');
             if (res.data.success) {
                 const freshData = res.data.data.conversations || [];
+                
+                // Ensure chats are sorted by latest message time
+                freshData.sort((a: any, b: any) => {
+                    const timeA = a.lastMessageTime ? new Date(a.lastMessageTime).getTime() : 0;
+                    const timeB = b.lastMessageTime ? new Date(b.lastMessageTime).getTime() : 0;
+                    return timeB - timeA;
+                });
+                
                 setLeads(freshData);
                 await AsyncStorage.setItem(CACHE_KEY_CONVERSATIONS, JSON.stringify(freshData));
             }
@@ -46,11 +56,78 @@ export default function ConversationsScreen() {
     };
 
     useEffect(() => {
+        let socket: Socket | null = null;
+
+        const setupSocket = async () => {
+            const token = await SecureStore.getItemAsync('accessToken');
+            const socketUrl = process.env.EXPO_PUBLIC_API_URL || 'https://whatsappapi.lfvs.in';
+            
+            socket = io(socketUrl, {
+                query: { token },
+                transports: ['websocket'],
+            });
+
+            socket.on('new_message', (msg) => {
+                setLeads(prevLeads => {
+                    const leadIndex = prevLeads.findIndex(l => l.id === msg.leadId);
+                    let newLeads = [...prevLeads];
+                    
+                    if (leadIndex >= 0) {
+                        const updatedLead = { ...newLeads[leadIndex] };
+                        updatedLead.lastMessage = msg.content;
+                        updatedLead.lastMessageTime = msg.timestamp;
+                        updatedLead.lastMessageSender = msg.sender;
+                        updatedLead.lastMessageStatus = msg.status;
+                        
+                        if (msg.sender === 'CUSTOMER') {
+                            updatedLead.unreadCount = (updatedLead.unreadCount || 0) + 1;
+                        }
+
+                        // Move the chat to the top
+                        newLeads.splice(leadIndex, 1);
+                        newLeads.unshift(updatedLead);
+                    } else {
+                        // If we don't have this lead in the list yet, fetch to get the full profile
+                        fetchConversations();
+                        return prevLeads;
+                    }
+                    
+                    AsyncStorage.setItem(CACHE_KEY_CONVERSATIONS, JSON.stringify(newLeads));
+                    return newLeads;
+                });
+            });
+
+            socket.on('message_status_update', (data) => {
+                setLeads(prevLeads => {
+                    const leadIndex = prevLeads.findIndex(l => l.id === data.leadId);
+                    if (leadIndex >= 0) {
+                        let newLeads = [...prevLeads];
+                        newLeads[leadIndex] = {
+                            ...newLeads[leadIndex],
+                            lastMessageStatus: data.status
+                        };
+                        AsyncStorage.setItem(CACHE_KEY_CONVERSATIONS, JSON.stringify(newLeads));
+                        return newLeads;
+                    }
+                    return prevLeads;
+                });
+            });
+
+            socket.on('new_lead', () => {
+                fetchConversations();
+            });
+        };
+
         if (user) {
             fetchConversations();
+            setupSocket();
         } else {
             setLoading(false);
         }
+
+        return () => {
+            if (socket) socket.disconnect();
+        };
     }, [user]);
 
     // Live filtering logic
