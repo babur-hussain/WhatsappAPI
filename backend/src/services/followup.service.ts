@@ -146,7 +146,7 @@ export class FollowUpService {
         try {
             const message = followUp.message || DEFAULT_TEMPLATES[followUp.followUpNumber]?.replace('{factoryName}', followUp.factory.factoryName) || 'Follow-up message';
 
-            await whatsappService.sendTextMessage(followUp.factoryId, followUp.lead.customerPhone, message);
+            const sendResult = await whatsappService.sendTextMessage(followUp.factoryId, followUp.lead.customerPhone, message);
 
             // Mark as sent
             await prisma.followUp.update({
@@ -165,6 +165,7 @@ export class FollowUpService {
                     content: message,
                     sender: 'BOT',
                     timestamp: new Date(),
+                    whatsappMessageId: sendResult?.messages?.[0]?.id || undefined,
                 },
             });
 

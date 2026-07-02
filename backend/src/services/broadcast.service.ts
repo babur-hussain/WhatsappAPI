@@ -303,10 +303,11 @@ export class BroadcastService {
         const { broadcastId, recipientId, factoryId, message, mediaUrl, phoneNumber, leadId } = data;
 
         try {
+            let sendResult;
             if (mediaUrl) {
-                await whatsappService.sendDocumentMessage(factoryId, phoneNumber, mediaUrl, message);
+                sendResult = await whatsappService.sendDocumentMessage(factoryId, phoneNumber, mediaUrl, message);
             } else {
-                await whatsappService.sendTextMessage(factoryId, phoneNumber, message);
+                sendResult = await whatsappService.sendTextMessage(factoryId, phoneNumber, message);
             }
 
             await prisma.broadcastRecipient.update({
@@ -322,6 +323,7 @@ export class BroadcastService {
                         content: mediaUrl ? `[Broadcast Image/Document] ${message}` : message,
                         sender: 'BOT',
                         timestamp: new Date(),
+                        whatsappMessageId: sendResult?.messages?.[0]?.id || undefined,
                     },
                 });
             }

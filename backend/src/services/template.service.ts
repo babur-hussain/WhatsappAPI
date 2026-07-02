@@ -429,6 +429,7 @@ export class TemplateService {
                     content: messageContent,
                     sender: 'BOT',
                     timestamp: new Date(),
+                    whatsappMessageId: result?.messages?.[0]?.id || undefined,
                 },
             });
 
@@ -545,7 +546,7 @@ export class TemplateService {
         const { broadcastId, recipientId, factoryId, templateName, languageCode, components, templateContent, phoneNumber, leadId } = data;
 
         try {
-            await whatsappService.sendTemplateMessage(factoryId, phoneNumber, templateName, languageCode, components);
+            const result = await whatsappService.sendTemplateMessage(factoryId, phoneNumber, templateName, languageCode, components);
 
             await prisma.broadcastRecipient.update({
                 where: { id: recipientId },
@@ -561,6 +562,7 @@ export class TemplateService {
                     content: messageContent,
                     sender: 'BOT',
                     timestamp: new Date(),
+                    whatsappMessageId: result?.messages?.[0]?.id || undefined,
                 },
             });
 
