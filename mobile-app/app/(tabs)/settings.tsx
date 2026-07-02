@@ -6,7 +6,7 @@ import apiClient from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 
 export default function SettingsScreen() {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     
@@ -207,6 +207,25 @@ export default function SettingsScreen() {
                         )}
                         <Text className="text-white text-[16px] font-bold ml-2">
                             {saving ? 'Saving to Meta...' : 'Save Changes'}
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        onPress={() => {
+                            Alert.alert(
+                                'Logout',
+                                'Are you sure you want to log out?',
+                                [
+                                    { text: 'Cancel', style: 'cancel' },
+                                    { text: 'Logout', style: 'destructive', onPress: logout }
+                                ]
+                            );
+                        }}
+                        className="bg-white border border-red-500 py-4 rounded-xl items-center flex-row justify-center mt-4"
+                    >
+                        <Ionicons name="log-out-outline" size={20} color="#ef4444" className="mr-2" />
+                        <Text className="text-red-500 text-[16px] font-bold ml-2">
+                            Logout
                         </Text>
                     </TouchableOpacity>
 

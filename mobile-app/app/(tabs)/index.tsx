@@ -69,17 +69,17 @@ export default function ConversationsScreen() {
 
             socket.on('new_message', (msg) => {
                 setLeads(prevLeads => {
-                    const leadIndex = prevLeads.findIndex(l => l.id === msg.leadId);
+                    const leadIndex = prevLeads.findIndex(l => String(l.id) === String(msg.leadId));
                     let newLeads = [...prevLeads];
                     
                     if (leadIndex >= 0) {
                         const updatedLead = { ...newLeads[leadIndex] };
-                        updatedLead.lastMessage = msg.content;
-                        updatedLead.lastMessageTime = msg.timestamp;
-                        updatedLead.lastMessageSender = msg.sender;
-                        updatedLead.lastMessageStatus = msg.status;
+                        updatedLead.lastMessage = msg.message.content;
+                        updatedLead.lastMessageTime = msg.message.timestamp;
+                        updatedLead.lastMessageSender = msg.message.sender;
+                        updatedLead.lastMessageStatus = msg.message.status;
                         
-                        if (msg.sender === 'CUSTOMER') {
+                        if (msg.message.sender === 'CUSTOMER') {
                             updatedLead.unreadCount = (updatedLead.unreadCount || 0) + 1;
                         }
 
@@ -99,7 +99,7 @@ export default function ConversationsScreen() {
 
             socket.on('message_status_update', (data) => {
                 setLeads(prevLeads => {
-                    const leadIndex = prevLeads.findIndex(l => l.id === data.leadId);
+                    const leadIndex = prevLeads.findIndex(l => String(l.id) === String(data.leadId));
                     if (leadIndex >= 0) {
                         let newLeads = [...prevLeads];
                         newLeads[leadIndex] = {

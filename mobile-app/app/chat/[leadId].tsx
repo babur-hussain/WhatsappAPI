@@ -88,9 +88,9 @@ export default function ChatScreen() {
         });
 
         socket.on('new_message', (msg) => {
-            if (msg.leadId === leadId) {
+            if (String(msg.leadId) === String(leadId)) {
                 setMessages((prev) => {
-                    const newMsgs = [...prev, msg];
+                    const newMsgs = [...prev, msg.message];
                     AsyncStorage.setItem(CACHE_KEY_MESSAGES, JSON.stringify(newMsgs));
                     return newMsgs;
                 });
