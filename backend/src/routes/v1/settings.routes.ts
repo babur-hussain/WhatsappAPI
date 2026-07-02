@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getApiKey, regenerateApiKey, updateWebhookConfig, getAutoReplySettings, updateAutoReplySettings, getWhatsappProfile, updateWhatsappProfile } from '../../controllers/settings.controller';
+import { getApiKey, regenerateApiKey, regenerateApiSecret, updateWebhookConfig, getAutoReplySettings, updateAutoReplySettings, getWhatsappProfile, updateWhatsappProfile } from '../../controllers/settings.controller';
 import { protect } from '../../middlewares/firebase-auth.middleware';
 
 const router = Router();
@@ -9,6 +9,8 @@ router.use(protect);
 router.route('/api-key')
     .get(getApiKey)
     .post(regenerateApiKey);
+
+router.post('/api-secret/regenerate', regenerateApiSecret);
 
 router.route('/webhook')
     .put(updateWebhookConfig);
