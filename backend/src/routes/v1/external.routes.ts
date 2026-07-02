@@ -196,8 +196,8 @@ router.get('/health', async (req: ApiKeyRequest, res: Response) => {
 router.get('/templates', async (req: ApiKeyRequest, res: Response) => {
     try {
         const result = await templateService.getTemplates(req.factoryId!, { status: 'APPROVED' });
-        // result should have { data: Template[] }
-        return res.json({ success: true, data: result.data });
+        // result should have { templates: Template[] }
+        return res.json({ success: true, data: result.templates });
     } catch (error: any) {
         logger.error(`[External API] get-templates error: ${error.message}`);
         return res.status(500).json({
