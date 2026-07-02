@@ -17,7 +17,7 @@ export class FollowUpService {
      */
     public async scheduleFollowUps(leadId: string, factoryId: string) {
         const factory = await prisma.factory.findUnique({ where: { id: factoryId } });
-        if (!factory || !factory.followUpsEnabled) return;
+        if (!factory || !factory.autoReplyEnabled || !factory.followUpsEnabled) return;
 
         const followUpConfigs = [
             { num: 1, enabled: factory.followUp1Enabled, delay: factory.followUp1Delay, message: factory.followUp1Message },
@@ -115,13 +115,13 @@ export class FollowUpService {
             return;
         }
 
-        // Check if factory still has follow-ups enabled
-        if (!followUp.factory.followUpsEnabled) {
+        // Check if factory still has follow-ups enabled (and master toggle autoReplyEnabled)
+        if (!followUp.factory.followUpsEnabled || !followUp.factory.autoReplyEnabled) {
             await prisma.followUp.update({
                 where: { id: followUpId },
                 data: { status: FollowUpStatus.CANCELLED },
             });
-            logger.info(`Follow-up ${followUpId} cancelled — factory disabled follow-ups`);
+            logger.info(`Follow-up ${followUpId} cancelled — factory disabled follow-ups or master toggle`);
             return;
         }
 
