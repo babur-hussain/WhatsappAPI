@@ -160,7 +160,7 @@ export class TemplateService {
 
         const uploadSessionId = sessionData.id;
 
-        const blob = new Blob([fileBuffer], { type: mimeType });
+        const blob = new Blob([new Uint8Array(fileBuffer)], { type: mimeType });
 
         // Step 4: Upload the file
         const uploadRes = await fetch(
