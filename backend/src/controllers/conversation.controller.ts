@@ -117,6 +117,7 @@ export const getConversations = catchAsync(async (req: AuthRequest, res: Respons
             status: lead.status,
             lastMessage: lead.messages[0]?.content || '',
             lastMessageSender: lead.messages[0]?.sender || null,
+            lastMessageStatus: lead.messages[0]?.status || null,
             lastMessageTime: lead.messages[0]?.timestamp || lead.updatedAt,
             messageCount: lead._count.messages,
             unreadCount: lead.unreadCount || 0,

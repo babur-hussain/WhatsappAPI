@@ -149,8 +149,13 @@ export default function ConversationsScreen() {
                     
                     <View className="flex-row justify-between items-center">
                         <View className="flex-1 flex-row items-center mr-4">
-                            {!unread && item.lastMessageSender === 'ADMIN' && (
-                                <Ionicons name="checkmark-done" size={16} color={item.status === 'READ' ? "#34B7F1" : "#8696A0"} style={{ marginRight: 4 }} />
+                            {!unread && (item.lastMessageSender === 'ADMIN' || item.lastMessageSender === 'BOT') && (
+                                <Ionicons 
+                                    name={(!item.lastMessageStatus || item.lastMessageStatus === 'SENT') ? 'checkmark' : 'checkmark-done'} 
+                                    size={16} 
+                                    color={item.lastMessageStatus === 'READ' ? "#34B7F1" : "#8696A0"} 
+                                    style={{ marginRight: 4 }} 
+                                />
                             )}
                             <Text className={`${unread ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-500 dark:text-slate-400'} text-[15px]`} numberOfLines={1}>
                                 {item.lastMessage || 'Tap to chat'}
