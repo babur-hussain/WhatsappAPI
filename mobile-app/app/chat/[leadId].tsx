@@ -191,7 +191,11 @@ export default function ChatScreen() {
                     status: 'SENT',
                     timestamp: new Date().toISOString()
                 };
-                setMessages((prev) => [mockMsg, ...prev]);
+                setMessages((prev) => {
+                    const newMsgs = [...prev, mockMsg];
+                    setTimeout(() => flatListRef.current?.scrollToOffset({ offset: 0, animated: true }), 100);
+                    return newMsgs;
+                });
             } catch (error) {
                 console.error(error);
                 Alert.alert('Error', 'Failed to send image');
@@ -272,7 +276,11 @@ export default function ChatScreen() {
                         status: 'SENT',
                         timestamp: new Date().toISOString()
                     };
-                    setMessages((prev) => [mockMsg, ...prev]);
+                    setMessages((prev) => {
+                        const newMsgs = [...prev, mockMsg];
+                        setTimeout(() => flatListRef.current?.scrollToOffset({ offset: 0, animated: true }), 100);
+                        return newMsgs;
+                    });
                 } catch (error) {
                     console.error(error);
                     Alert.alert('Error', `Failed to send ${mediaType}`);
