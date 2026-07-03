@@ -22,12 +22,15 @@ export default function WhatsAppPage() {
     const [isConnected, setIsConnected] = useState(false);
     const [connectedNumber, setConnectedNumber] = useState('');
     const [connectedPhoneNumberId, setConnectedPhoneNumberId] = useState('');
+    const [connectedBusinessAccountId, setConnectedBusinessAccountId] = useState('');
+    const [connectedVerifyToken, setConnectedVerifyToken] = useState('');
     const [isVerifying, setIsVerifying] = useState(false);
     const [isConnecting, setIsConnecting] = useState(false);
     const [isDisconnecting, setIsDisconnecting] = useState(false);
     const [verifyResult, setVerifyResult] = useState<{ success: boolean; phoneNumber?: string; error?: string } | null>(null);
     const [loading, setLoading] = useState(true);
     const [copied, setCopied] = useState(false);
+    const [copiedToken, setCopiedToken] = useState(false);
 
     const webhookUrl = typeof window !== 'undefined'
         ? `${window.location.protocol}//${window.location.hostname}:8000/api/v1/webhook`
@@ -50,6 +53,8 @@ export default function WhatsAppPage() {
                 setIsConnected(data.data.connected);
                 setConnectedNumber(data.data.phoneNumber || '');
                 setConnectedPhoneNumberId(data.data.phoneNumberId || '');
+                setConnectedBusinessAccountId(data.data.businessAccountId || '');
+                setConnectedVerifyToken(data.data.verifyToken || '');
             }
         } catch (e) {
             console.log('Failed to fetch status:', e);
@@ -89,6 +94,8 @@ export default function WhatsAppPage() {
                 setIsConnected(true);
                 setConnectedNumber(data.data.phoneNumber || whatsappNumber);
                 setConnectedPhoneNumberId(phoneNumberId);
+                setConnectedBusinessAccountId(whatsappBusinessAccountId);
+                setConnectedVerifyToken(data.data.verifyToken || '');
                 setPhoneNumberId('');
                 setWhatsappBusinessAccountId('');
                 setAccessToken('');
@@ -110,6 +117,8 @@ export default function WhatsAppPage() {
             setIsConnected(false);
             setConnectedNumber('');
             setConnectedPhoneNumberId('');
+            setConnectedBusinessAccountId('');
+            setConnectedVerifyToken('');
         } catch (e) {
             console.log('Disconnect failed:', e);
         } finally {
@@ -121,6 +130,12 @@ export default function WhatsAppPage() {
         navigator.clipboard.writeText(webhookUrl);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+    };
+
+    const handleCopyVerifyToken = () => {
+        navigator.clipboard.writeText(connectedVerifyToken);
+        setCopiedToken(true);
+        setTimeout(() => setCopiedToken(false), 2000);
     };
 
     if (loading) {
@@ -149,42 +164,79 @@ export default function WhatsAppPage() {
 
             {/* Connection Status */}
             <Card className={`border-2 transition-all duration-300 ${isConnected ? 'border-green-200 bg-green-50/30' : 'border-gray-200 bg-white'}`}>
-                <CardContent className="p-6 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        {isConnected ? (
-                            <div className="p-3 bg-green-100 rounded-full">
-                                <Wifi className="w-6 h-6 text-green-600" />
-                            </div>
-                        ) : (
-                            <div className="p-3 bg-gray-100 rounded-full">
-                                <WifiOff className="w-6 h-6 text-gray-400" />
-                            </div>
-                        )}
-                        <div>
-                            <h3 className={`text-lg font-semibold ${isConnected ? 'text-green-800' : 'text-gray-700'}`}>
-                                {isConnected ? 'Connected' : 'Not Connected'}
-                            </h3>
+                <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
                             {isConnected ? (
-                                <p className="text-sm text-green-600">
-                                    Number: {connectedNumber || connectedPhoneNumberId} — Receiving & sending messages
-                                </p>
+                                <div className="p-3 bg-green-100 rounded-full">
+                                    <Wifi className="w-6 h-6 text-green-600" />
+                                </div>
                             ) : (
-                                <p className="text-sm text-gray-500">
-                                    Configure your Meta WhatsApp Business API credentials below
-                                </p>
+                                <div className="p-3 bg-gray-100 rounded-full">
+                                    <WifiOff className="w-6 h-6 text-gray-400" />
+                                </div>
                             )}
+                            <div>
+                                <h3 className={`text-lg font-semibold ${isConnected ? 'text-green-800' : 'text-gray-700'}`}>
+                                    {isConnected ? 'Connected' : 'Not Connected'}
+                                </h3>
+                                {isConnected ? (
+                                    <p className="text-sm text-green-600">
+                                        Number: {connectedNumber || connectedPhoneNumberId} — Receiving & sending messages
+                                    </p>
+                                ) : (
+                                    <p className="text-sm text-gray-500">
+                                        Configure your Meta WhatsApp Business API credentials below
+                                    </p>
+                                )}
+                            </div>
                         </div>
+                        {isConnected && (
+                            <Button
+                                variant="outline"
+                                className="text-red-600 border-red-200 hover:bg-red-50"
+                                onClick={handleDisconnect}
+                                disabled={isDisconnecting}
+                            >
+                                {isDisconnecting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                                Disconnect
+                            </Button>
+                        )}
                     </div>
+
+                    {/* Show connected credentials */}
                     {isConnected && (
-                        <Button
-                            variant="outline"
-                            className="text-red-600 border-red-200 hover:bg-red-50"
-                            onClick={handleDisconnect}
-                            disabled={isDisconnecting}
-                        >
-                            {isDisconnecting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                            Disconnect
-                        </Button>
+                        <div className="mt-6 pt-4 border-t border-green-200 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Phone Number ID</label>
+                                <p className="font-mono text-sm text-gray-800 bg-white/60 rounded px-3 py-2 border border-green-100">{connectedPhoneNumberId || '—'}</p>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Business Account ID</label>
+                                <p className="font-mono text-sm text-gray-800 bg-white/60 rounded px-3 py-2 border border-green-100">{connectedBusinessAccountId || '—'}</p>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Webhook URL</label>
+                                <div className="flex items-center gap-2">
+                                    <p className="font-mono text-sm text-gray-800 bg-white/60 rounded px-3 py-2 border border-green-100 flex-1 truncate">{webhookUrl}</p>
+                                    <Button variant="outline" size="icon" onClick={handleCopyWebhook} className="flex-shrink-0">
+                                        {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                                    </Button>
+                                </div>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Webhook Verify Token</label>
+                                <div className="flex items-center gap-2">
+                                    <p className="font-mono text-sm text-gray-800 bg-white/60 rounded px-3 py-2 border border-green-100 flex-1 truncate">{connectedVerifyToken || '—'}</p>
+                                    {connectedVerifyToken && (
+                                        <Button variant="outline" size="icon" onClick={handleCopyVerifyToken} className="flex-shrink-0">
+                                            {copiedToken ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                                        </Button>
+                                    )}
+                                </div>
+                                <p className="text-xs text-gray-400">Use this token in Meta&apos;s webhook verification field.</p>
+                            </div>
+                        </div>
                     )}
                 </CardContent>
             </Card>
@@ -317,12 +369,9 @@ export default function WhatsAppPage() {
 
                             <div className="mt-2 space-y-2">
                                 <label className="text-sm font-medium text-gray-700">Webhook Verify Token</label>
-                                <Input
-                                    readOnly
-                                    value="loomiflow_test_token"
-                                    className="font-mono text-xs bg-gray-50"
-                                />
-                                <p className="text-xs text-gray-400">Use this token in Meta's webhook verification field.</p>
+                                <p className="text-xs text-amber-600 bg-amber-50 rounded px-3 py-2 border border-amber-200">
+                                    Your unique verify token will be generated when you connect. Use it in Meta&apos;s webhook verification field.
+                                </p>
                             </div>
                         </CardContent>
                     </Card>

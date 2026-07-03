@@ -20,6 +20,7 @@ export const verifyWhatsApp = catchAsync(async (req: AuthRequest, res: Response)
 });
 
 import { encrypt } from '../utils/crypto.util';
+import crypto from 'crypto';
 
 /**
  * Save WhatsApp credentials and mark factory as connected
@@ -40,6 +41,9 @@ export const connectWhatsApp = catchAsync(async (req: AuthRequest, res: Response
         return res.status(400).json(errorResponse(verification.error || 'Invalid credentials'));
     }
 
+    // Generate a unique verify token for this factory's webhook
+    const verifyToken = `lf_${crypto.randomBytes(16).toString('hex')}`;
+
     await prisma.factory.update({
         where: { id: factoryId },
         data: {
@@ -47,6 +51,7 @@ export const connectWhatsApp = catchAsync(async (req: AuthRequest, res: Response
             whatsappBusinessAccountId: whatsappBusinessAccountId,
             whatsappAccessToken: encrypt(accessToken),
             whatsappNumber: whatsappNumber || verification.phoneNumber || null,
+            whatsappVerifyToken: verifyToken,
             isWhatsappConnected: true,
         },
     });
@@ -54,6 +59,7 @@ export const connectWhatsApp = catchAsync(async (req: AuthRequest, res: Response
     res.status(200).json(successResponse({
         connected: true,
         phoneNumber: whatsappNumber || verification.phoneNumber,
+        verifyToken,
     }));
 });
 
@@ -70,6 +76,8 @@ export const getWhatsAppStatus = catchAsync(async (req: AuthRequest, res: Respon
             isWhatsappConnected: true,
             whatsappNumber: true,
             whatsappPhoneNumberId: true,
+            whatsappBusinessAccountId: true,
+            whatsappVerifyToken: true,
         },
     });
 
@@ -79,6 +87,8 @@ export const getWhatsAppStatus = catchAsync(async (req: AuthRequest, res: Respon
         connected: factory.isWhatsappConnected,
         phoneNumber: factory.whatsappNumber,
         phoneNumberId: factory.whatsappPhoneNumberId,
+        businessAccountId: factory.whatsappBusinessAccountId,
+        verifyToken: factory.whatsappVerifyToken,
     }));
 });
 
@@ -95,6 +105,8 @@ export const disconnectWhatsApp = catchAsync(async (req: AuthRequest, res: Respo
             whatsappPhoneNumberId: null,
             whatsappAccessToken: null,
             whatsappNumber: null,
+            whatsappBusinessAccountId: null,
+            whatsappVerifyToken: null,
             isWhatsappConnected: false,
         },
     });

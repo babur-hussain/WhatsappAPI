@@ -143,6 +143,7 @@ model Factory {
   whatsappPhoneNumberId     String?
   whatsappAccessToken       String?
   whatsappBusinessAccountId String?
+  whatsappVerifyToken       String?
   isWhatsappConnected       Boolean @default(false)
   isCatalogUploaded         Boolean @default(false)
   isOnboardingComplete      Boolean @default(false)

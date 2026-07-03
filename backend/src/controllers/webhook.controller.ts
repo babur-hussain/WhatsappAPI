@@ -31,19 +31,29 @@ async function fetchProfilePicture(accessToken: string, phoneNumberId: string, w
 
 export const verifyWebhook = catchAsync(async (req: Request, res: Response) => {
     const mode = req.query['hub.mode'];
-    const token = req.query['hub.verify_token'];
+    const token = req.query['hub.verify_token'] as string | undefined;
     const challenge = req.query['hub.challenge'];
 
-    const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN;
+    const globalVerifyToken = process.env.WHATSAPP_VERIFY_TOKEN;
 
     // Check if a token and mode were sent
     if (mode && token) {
-        if (mode === 'subscribe' && token === verifyToken) {
-            // Responds with the challenge token from the request
-            console.log('WEBHOOK_VERIFIED');
-            res.status(200).send(challenge);
+        if (mode === 'subscribe') {
+            // First check if the token matches any factory's verify token
+            const matchingFactory = await prisma.factory.findFirst({
+                where: { whatsappVerifyToken: token },
+                select: { id: true },
+            });
+
+            // Accept if it matches a per-factory token OR the global fallback
+            if (matchingFactory || token === globalVerifyToken) {
+                console.log('WEBHOOK_VERIFIED');
+                res.status(200).send(challenge);
+            } else {
+                res.sendStatus(403);
+            }
         } else {
-            // Responds with '403 Forbidden' if verify tokens do not match
+            // Responds with '403 Forbidden' if mode is not 'subscribe'
             res.sendStatus(403);
         }
     } else {
